@@ -20,28 +20,28 @@ Single-context: `CONTEXT.md` at repo root and `docs/adr/`. See `docs/agents/doma
 
 ## Recommended workflow
 
-| Phase | Skill | When |
-| --- | --- | --- |
-| Align | `/grill-with-docs` | Before any non-trivial feature or system design |
-| Spec | `/to-prd` | After alignment, to capture a PRD as a GitHub issue |
-| Decompose | `/to-issues` | Break PRDs/plans into vertical-slice issues |
-| Build | `/tdd` | Implementation with red-green-refactor |
-| Debug | `/diagnose` | Bugs, regressions, perf issues |
-| Architecture | `/improve-codebase-architecture` | Periodic deepening / module consolidation |
-| Orient | `/zoom-out` | Unfamiliar code areas |
-| Handoff | `/handoff` | Session boundaries between agents |
+| Phase        | Skill                            | When                                                |
+| ------------ | -------------------------------- | --------------------------------------------------- |
+| Align        | `/grill-with-docs`               | Before any non-trivial feature or system design     |
+| Spec         | `/to-prd`                        | After alignment, to capture a PRD as a GitHub issue |
+| Decompose    | `/to-issues`                     | Break PRDs/plans into vertical-slice issues         |
+| Build        | `/tdd`                           | Implementation with red-green-refactor              |
+| Debug        | `/diagnose`                      | Bugs, regressions, perf issues                      |
+| Architecture | `/improve-codebase-architecture` | Periodic deepening / module consolidation           |
+| Orient       | `/zoom-out`                      | Unfamiliar code areas                               |
+| Handoff      | `/handoff`                       | Session boundaries between agents                   |
 
 Productivity: `/grill-me` (no docs), `/caveman` (compressed replies), `/prototype` (throwaway sims/UI variants).
 
 ## Stack (v1)
 
-| Layer | Choice | Notes |
-| --- | --- | --- |
-| Client | Expo + dev client | React Native; see ADR-0001 |
-| Sync | WebSocket, push per **global tick** | Server broadcasts; client sends commands |
-| Server | Node.js + TypeScript | `apps/server`; see ADR-0002 |
-| Auth | Firebase Auth | Anonymous **guest** + **upgrade**; see ADR-0002 |
-| Datastore | PostgreSQL | Server-side only; see ADR-0003 |
+| Layer     | Choice                              | Notes                                           |
+| --------- | ----------------------------------- | ----------------------------------------------- |
+| Client    | Expo + dev client                   | React Native; see ADR-0001                      |
+| Sync      | WebSocket, push per **global tick** | Server broadcasts; client sends commands        |
+| Server    | Node.js + TypeScript                | `apps/server`; see ADR-0002                     |
+| Auth      | Firebase Auth                       | Anonymous **guest** + **upgrade**; see ADR-0002 |
+| Datastore | PostgreSQL                          | Server-side only; see ADR-0003                  |
 
 ## Engineering standards
 
