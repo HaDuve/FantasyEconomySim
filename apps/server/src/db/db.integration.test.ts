@@ -9,15 +9,21 @@ import { createDb } from "./client.js";
 import { applyDownSql, runMigrations } from "./migrate.js";
 import { migrationsFolder } from "./paths.js";
 import {
+  getInventory,
+  getWallet,
+  setInventoryQuantity,
+  setWalletCrowns,
+} from "./ledger.js";
+import {
   getPlayerByFirebaseUid,
   getPlayerById,
   registerPlayer,
 } from "./players.js";
 
-const firstDownMigration = path.join(
-  migrationsFolder,
+const downMigrations = [
+  "down/0001_free_wendell_vaughn.down.sql",
   "down/0000_zippy_tattoo.down.sql",
-);
+].map((file) => path.join(migrationsFolder, file));
 
 type StartedPostgres = Awaited<ReturnType<PostgreSqlContainer["start"]>>;
 
@@ -70,6 +76,68 @@ describe("postgres persistence", () => {
       });
     });
 
+    it("persists wallet crowns for a player", async () => {
+      await withMigratedDatabase(getUri(), async ({ db }) => {
+        const player = await registerPlayer(db);
+
+        await setWalletCrowns(db, player.id, 100);
+
+        expect(await getWallet(db, player.id)).toEqual({
+          playerId: player.id,
+          crowns: 100,
+        });
+      });
+    });
+
+    it("persists inventory resources for a player", async () => {
+      await withMigratedDatabase(getUri(), async ({ db }) => {
+        const player = await registerPlayer(db);
+
+        await setInventoryQuantity(db, player.id, "grain", 5);
+        await setInventoryQuantity(db, player.id, "ore", 2);
+
+        expect(await getInventory(db, player.id)).toEqual({
+          grain: 5,
+          ore: 2,
+        });
+      });
+    });
+
+    it("rejects negative wallet crowns", async () => {
+      await withMigratedDatabase(getUri(), async ({ db }) => {
+        const player = await registerPlayer(db);
+
+        await expect(setWalletCrowns(db, player.id, -1)).rejects.toThrow();
+      });
+    });
+
+    it("rejects negative inventory quantity", async () => {
+      await withMigratedDatabase(getUri(), async ({ db }) => {
+        const player = await registerPlayer(db);
+
+        await expect(
+          setInventoryQuantity(db, player.id, "grain", -1),
+        ).rejects.toThrow();
+      });
+    });
+
+    it("round-trips player wallet and inventory", async () => {
+      await withMigratedDatabase(getUri(), async ({ db }) => {
+        const player = await registerPlayer(db, {
+          firebaseUid: "firebase-round-trip",
+        });
+
+        await setWalletCrowns(db, player.id, 250);
+        await setInventoryQuantity(db, player.id, "lumber", 12);
+
+        expect(await getPlayerByFirebaseUid(db, "firebase-round-trip")).toEqual(
+          player,
+        );
+        expect((await getWallet(db, player.id))?.crowns).toBe(250);
+        expect(await getInventory(db, player.id)).toEqual({ lumber: 12 });
+      });
+    });
+
     it("registers an upgraded player by firebase uid", async () => {
       await withMigratedDatabase(getUri(), async ({ db }) => {
         const player = await registerPlayer(db, {
@@ -102,14 +170,14 @@ describe("postgres persistence", () => {
   describeWithPostgres("paired down migration", (getUri) => {
     it("reverses schema so players cannot be registered", async () => {
       const pool = new Pool({ connectionString: getUri() });
-      const downSql = readFileSync(firstDownMigration, "utf8");
-
       try {
         await runMigrations(pool);
         const db = createDb(pool);
         await registerPlayer(db);
 
-        await applyDownSql(pool, downSql);
+        for (const downPath of downMigrations) {
+          await applyDownSql(pool, readFileSync(downPath, "utf8"));
+        }
 
         await expect(registerPlayer(createDb(pool))).rejects.toThrow();
       } finally {
