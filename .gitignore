@@ -6,7 +6,10 @@
 
 # Build artifacts (add stack-specific entries as the repo grows)
 node_modules/
+.expo/
 dist/
+*.tsbuildinfo
+pnpm-debug.log*
 build/
 bin/
 obj/
