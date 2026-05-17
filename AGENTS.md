@@ -33,6 +33,16 @@ Single-context: `CONTEXT.md` at repo root and `docs/adr/`. See `docs/agents/doma
 
 Productivity: `/grill-me` (no docs), `/caveman` (compressed replies), `/prototype` (throwaway sims/UI variants).
 
+## Stack (v1)
+
+| Layer | Choice | Notes |
+| --- | --- | --- |
+| Client | Expo + dev client | React Native; see ADR-0001 |
+| Sync | WebSocket, push per **global tick** | Server broadcasts; client sends commands |
+| Server | Node.js + TypeScript | `apps/server`; see ADR-0002 |
+| Auth | Firebase Auth | Anonymous **guest** + **upgrade**; see ADR-0002 |
+| Datastore | PostgreSQL | Server-side only; see ADR-0003 |
+
 ## Engineering standards
 
 - **Ubiquitous language**: Use terms from `CONTEXT.md` in code, issues, and ADRs.
@@ -50,5 +60,8 @@ Productivity: `/grill-me` (no docs), `/caveman` (compressed replies), `/prototyp
 │   ├── agents/        ← skill configuration
 │   └── adr/           ← architecture decision records
 ├── .agents/skills/    ← Matt Pocock skills (skills-lock.json pins versions)
-└── src/               ← application code (TBD)
+├── apps/
+│   ├── mobile/        ← Expo React Native client (TBD)
+│   └── server/        ← authoritative simulation API (TBD)
+└── packages/          ← shared types, domain logic (TBD)
 ```
