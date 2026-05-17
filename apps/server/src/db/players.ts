@@ -1,12 +1,12 @@
 import { eq } from "drizzle-orm";
 
-import type { Db } from "./client.js";
+import type { Db, DbExecutor } from "./client.js";
 import { players } from "./schema.js";
 
 export type Player = typeof players.$inferSelect;
 
 export async function registerPlayer(
-  db: Db,
+  db: DbExecutor,
   input: { firebaseUid?: string | null } = {},
 ): Promise<Player> {
   const [row] = await db

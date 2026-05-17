@@ -1,15 +1,14 @@
 import type { ResourceId } from "@fantasy-economy-sim/domain";
-import { isResourceId, RESOURCE_IDS } from "@fantasy-economy-sim/domain";
+import { isResourceId } from "@fantasy-economy-sim/domain";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { Db } from "./db/client.js";
 import {
+  createPlayerWithLedger,
   getInventory,
   getWallet,
-  setInventoryQuantity,
-  setWalletCrowns,
 } from "./db/ledger.js";
-import { getPlayerById, registerPlayer } from "./db/players.js";
+import { getPlayerById } from "./db/players.js";
 
 type DevCreateBody = {
   firebaseUid?: string | null;
@@ -70,7 +69,10 @@ function isDevCreateBody(value: unknown): value is DevCreateBody {
     return false;
   }
 
-  if (body.crowns !== undefined && typeof body.crowns !== "number") {
+  if (
+    body.crowns !== undefined &&
+    (typeof body.crowns !== "number" || body.crowns < 0)
+  ) {
     return false;
   }
 
@@ -80,7 +82,11 @@ function isDevCreateBody(value: unknown): value is DevCreateBody {
     }
 
     for (const [resourceId, quantity] of Object.entries(body.inventory)) {
-      if (!isResourceId(resourceId) || typeof quantity !== "number") {
+      if (
+        !isResourceId(resourceId) ||
+        typeof quantity !== "number" ||
+        quantity < 0
+      ) {
         return false;
       }
     }
@@ -109,21 +115,13 @@ export async function handleDevRoute(
         return true;
       }
 
-      const player = await registerPlayer(db, {
+      const created = await createPlayerWithLedger(db, {
         firebaseUid: body.firebaseUid ?? null,
+        crowns: body.crowns,
+        inventory: body.inventory,
       });
 
-      const crowns = body.crowns ?? 0;
-      await setWalletCrowns(db, player.id, crowns);
-
-      for (const resourceId of RESOURCE_IDS) {
-        const quantity = body.inventory?.[resourceId];
-        if (quantity !== undefined) {
-          await setInventoryQuantity(db, player.id, resourceId, quantity);
-        }
-      }
-
-      sendJson(response, 201, { playerId: player.id });
+      sendJson(response, 201, { playerId: created.playerId });
     } catch {
       sendJson(response, 500, { error: "internal_error" });
     }

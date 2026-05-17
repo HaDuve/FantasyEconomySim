@@ -9,11 +9,13 @@ import { createDb } from "./client.js";
 import { applyDownSql, runMigrations } from "./migrate.js";
 import { migrationsFolder } from "./paths.js";
 import {
+  createPlayerWithLedger,
   getInventory,
   getWallet,
   setInventoryQuantity,
   setWalletCrowns,
 } from "./ledger.js";
+import { inventory, players } from "./schema.js";
 import {
   getPlayerByFirebaseUid,
   getPlayerById,
@@ -21,6 +23,7 @@ import {
 } from "./players.js";
 
 const downMigrations = [
+  "down/0002_brief_xorn.down.sql",
   "down/0001_free_wendell_vaughn.down.sql",
   "down/0000_zippy_tattoo.down.sql",
 ].map((file) => path.join(migrationsFolder, file));
@@ -117,6 +120,51 @@ describe("postgres persistence", () => {
 
         await expect(
           setInventoryQuantity(db, player.id, "grain", -1),
+        ).rejects.toThrow();
+      });
+    });
+
+    it("rolls back player creation when wallet write fails", async () => {
+      await withMigratedDatabase(getUri(), async ({ db }) => {
+        const playersBefore = await db.select().from(players);
+
+        await expect(
+          db.transaction(async (tx) => {
+            const player = await registerPlayer(tx);
+            await setWalletCrowns(tx, player.id, -1);
+          }),
+        ).rejects.toThrow();
+
+        expect(await db.select().from(players)).toHaveLength(
+          playersBefore.length,
+        );
+      });
+    });
+
+    it("createPlayerWithLedger persists player wallet and inventory atomically", async () => {
+      await withMigratedDatabase(getUri(), async ({ db }) => {
+        const { playerId, crowns, inventory: snapshot } =
+          await createPlayerWithLedger(db, {
+            crowns: 80,
+            inventory: { grain: 2, ore: 1 },
+          });
+
+        expect(await getPlayerById(db, playerId)).toBeDefined();
+        expect((await getWallet(db, playerId))?.crowns).toBe(crowns);
+        expect(await getInventory(db, playerId)).toEqual(snapshot);
+      });
+    });
+
+    it("rejects invalid resource_id at the database", async () => {
+      await withMigratedDatabase(getUri(), async ({ db }) => {
+        const player = await registerPlayer(db);
+
+        await expect(
+          db.insert(inventory).values({
+            playerId: player.id,
+            resourceId: "not-a-resource",
+            quantity: 1,
+          }),
         ).rejects.toThrow();
       });
     });

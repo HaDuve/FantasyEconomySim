@@ -1,0 +1,1 @@
+ALTER TABLE "inventory" ADD CONSTRAINT "inventory_resource_id_valid" CHECK ("inventory"."resource_id" in ('grain', 'game', 'lumber', 'ore', 'herbs', 'ingots', 'potions', 'scrolls'));

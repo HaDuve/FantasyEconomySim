@@ -1,16 +1,58 @@
 import type { ResourceId, WalletCrowns } from "@fantasy-economy-sim/domain";
-import { isResourceId } from "@fantasy-economy-sim/domain";
+import { isResourceId, RESOURCE_IDS } from "@fantasy-economy-sim/domain";
 import { eq } from "drizzle-orm";
 
-import type { Db } from "./client.js";
+import type { Db, DbExecutor } from "./client.js";
 import { inventory, wallets } from "./schema.js";
+import { registerPlayer } from "./players.js";
 
 export type Wallet = typeof wallets.$inferSelect;
 export type InventoryRow = typeof inventory.$inferSelect;
 export type InventorySnapshot = Partial<Record<ResourceId, number>>;
 
-export async function setWalletCrowns(
+export type CreatePlayerLedgerInput = {
+  firebaseUid?: string | null;
+  crowns?: WalletCrowns;
+  inventory?: Partial<Record<ResourceId, number>>;
+};
+
+export type CreatePlayerLedgerResult = {
+  playerId: string;
+  crowns: WalletCrowns;
+  inventory: InventorySnapshot;
+};
+
+export async function createPlayerWithLedger(
   db: Db,
+  input: CreatePlayerLedgerInput = {},
+): Promise<CreatePlayerLedgerResult> {
+  const crowns = input.crowns ?? 0;
+  const inventoryInput = input.inventory ?? {};
+
+  return db.transaction(async (tx) => {
+    const player = await registerPlayer(tx, {
+      firebaseUid: input.firebaseUid ?? null,
+    });
+
+    await setWalletCrowns(tx, player.id, crowns);
+
+    for (const resourceId of RESOURCE_IDS) {
+      const quantity = inventoryInput[resourceId];
+      if (quantity !== undefined) {
+        await setInventoryQuantity(tx, player.id, resourceId, quantity);
+      }
+    }
+
+    return {
+      playerId: player.id,
+      crowns,
+      inventory: await getInventory(tx, player.id),
+    };
+  });
+}
+
+export async function setWalletCrowns(
+  db: DbExecutor,
   playerId: string,
   crowns: WalletCrowns,
 ): Promise<Wallet> {
@@ -31,7 +73,7 @@ export async function setWalletCrowns(
 }
 
 export async function getWallet(
-  db: Db,
+  db: DbExecutor,
   playerId: string,
 ): Promise<Wallet | undefined> {
   const [row] = await db
@@ -44,7 +86,7 @@ export async function getWallet(
 }
 
 export async function setInventoryQuantity(
-  db: Db,
+  db: DbExecutor,
   playerId: string,
   resourceId: ResourceId,
   quantity: number,
@@ -70,7 +112,7 @@ export async function setInventoryQuantity(
 }
 
 export async function getInventory(
-  db: Db,
+  db: DbExecutor,
   playerId: string,
 ): Promise<InventorySnapshot> {
   const rows = await db

@@ -45,5 +45,9 @@ export const inventory = pgTable(
   (table) => [
     primaryKey({ columns: [table.playerId, table.resourceId] }),
     check("inventory_quantity_non_negative", sql`${table.quantity} >= 0`),
+    check(
+      "inventory_resource_id_valid",
+      sql`${table.resourceId} in ('grain', 'game', 'lumber', 'ore', 'herbs', 'ingots', 'potions', 'scrolls')`,
+    ),
   ],
 );
