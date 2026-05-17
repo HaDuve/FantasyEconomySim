@@ -7,4 +7,5 @@ export const STARTER_TRIO_PROFESSION_IDS = [
 export type StarterTrioProfessionId =
   (typeof STARTER_TRIO_PROFESSION_IDS)[number];
 
-export type ProfessionId = StarterTrioProfessionId | string;
+/** v1: onboarding professions only; widen when more roles ship. */
+export type ProfessionId = StarterTrioProfessionId;

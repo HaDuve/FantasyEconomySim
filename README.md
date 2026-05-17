@@ -38,10 +38,12 @@ Listens on `http://localhost:3000` by default. `GET /health` returns `{ ok: true
 
 Expo **development client** scaffold (ADR-0001). Requires a dev build for native `expo-dev-client`; use Expo Go only for quick UI checks without custom native code.
 
+`pnpm dev:mobile` builds `packages/domain` first, then starts Expo. Metro resolves `@fantasy-economy-sim/domain` from the workspace package (`dist/`), same as the server — run `pnpm install` at the repo root so the link exists.
+
 ```sh
 pnpm dev:mobile
 ```
 
 ## Domain package
 
-`packages/domain` holds shared types and constants: eight **resources**, **crown** (not a resource), **starter trio** professions, conversion **recipes**, and tick/command message shapes.
+`packages/domain` holds shared types and constants: eight **resources**, `WalletCrowns` (**crown** in the **wallet**, not a **resource**), **starter trio** `ProfessionId` values, conversion **recipes**, and tick/command message shapes.

@@ -4,12 +4,12 @@
   "private": true,
   "main": "index.ts",
   "scripts": {
-    "start": "expo start --dev-client",
+    "start": "pnpm --filter @fantasy-economy-sim/domain build && expo start --dev-client",
     "android": "expo start --android --dev-client",
     "ios": "expo start --ios --dev-client",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "pnpm --filter @fantasy-economy-sim/domain build && vitest run"
   },
   "dependencies": {
     "@fantasy-economy-sim/domain": "workspace:*",
@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "typescript": "~5.9.2",
+    "typescript": "^5.8.3",
     "vitest": "^3.1.4"
   }
 }

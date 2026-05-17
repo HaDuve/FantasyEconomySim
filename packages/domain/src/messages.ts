@@ -1,3 +1,4 @@
+import type { WalletCrowns } from "./crown.js";
 import type { ResourceId } from "./resources.js";
 
 export type InventorySnapshot = Partial<Record<ResourceId, number>>;
@@ -5,7 +6,7 @@ export type InventorySnapshot = Partial<Record<ResourceId, number>>;
 export type TickBroadcast = {
   kind: "tick";
   tickId: number;
-  walletCrowns: number;
+  walletCrowns: WalletCrowns;
   inventory: InventorySnapshot;
 };
 

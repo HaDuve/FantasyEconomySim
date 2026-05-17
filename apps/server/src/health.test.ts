@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createServer } from "./server.js";
 
 describe("server health", () => {
@@ -19,9 +19,5 @@ describe("server health", () => {
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
     );
-  });
-
-  afterAll(() => {
-    // no shared server state
   });
 });

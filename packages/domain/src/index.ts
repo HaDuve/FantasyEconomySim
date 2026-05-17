@@ -1,3 +1,4 @@
+export { type WalletCrowns } from "./crown.js";
 export {
   RESOURCE_IDS,
   isResourceId,
