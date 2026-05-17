@@ -5,7 +5,11 @@ import * as schema from "./schema.js";
 
 export type Db = ReturnType<typeof createDb>;
 
-export function createDb(connectionString: string) {
-  const pool = new Pool({ connectionString });
+export function createDb(connectionStringOrPool: string | Pool) {
+  const pool =
+    typeof connectionStringOrPool === "string"
+      ? new Pool({ connectionString: connectionStringOrPool })
+      : connectionStringOrPool;
+
   return drizzle({ client: pool, schema });
 }

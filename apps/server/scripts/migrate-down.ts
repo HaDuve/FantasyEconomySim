@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { Pool } from "pg";
 
+import { applyDownSql } from "../src/db/migrate.js";
+
 const file = process.argv[2];
 if (!file) {
   console.error("Usage: db:migrate:down -- <path-to.down.sql>");
@@ -17,7 +19,7 @@ const sql = readFileSync(file, "utf8");
 const pool = new Pool({ connectionString });
 
 try {
-  await pool.query(sql);
+  await applyDownSql(pool, sql);
   console.log(`Applied down migration: ${file}`);
 } finally {
   await pool.end();

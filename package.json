@@ -5,6 +5,7 @@
   "scripts": {
     "typecheck": "pnpm --filter @fantasy-economy-sim/domain build && pnpm -r typecheck",
     "test": "pnpm --filter @fantasy-economy-sim/domain build && pnpm -r test",
+    "test:integration": "pnpm --filter @fantasy-economy-sim/server test:integration",
     "dev:server": "pnpm --filter @fantasy-economy-sim/server dev",
     "dev:mobile": "pnpm --filter @fantasy-economy-sim/mobile start",
     "db:up": "docker compose up -d",
