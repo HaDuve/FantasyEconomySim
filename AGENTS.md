@@ -42,6 +42,7 @@ Productivity: `/grill-me` (no docs), `/caveman` (compressed replies), `/prototyp
 | Server    | Node.js + TypeScript                | `apps/server`; see ADR-0002                     |
 | Auth      | Firebase Auth                       | Anonymous **guest** + **upgrade**; see ADR-0002 |
 | Datastore | PostgreSQL                          | Server-side only; see ADR-0003                  |
+| Monorepo  | pnpm workspaces                     | `packages/domain`; see ADR-0004                 |
 
 ## Engineering standards
 
@@ -63,5 +64,8 @@ Productivity: `/grill-me` (no docs), `/caveman` (compressed replies), `/prototyp
 ├── apps/
 │   ├── mobile/        ← Expo React Native client (TBD)
 │   └── server/        ← authoritative simulation API (TBD)
-└── packages/          ← shared types, domain logic (TBD)
+└── packages/
+    └── domain/        ← shared types, pure domain logic (TBD)
 ```
+
+Monorepo tool: **pnpm workspaces** (ADR-0004). Turborepo deferred.
