@@ -1,0 +1,27 @@
+{
+  "name": "@fantasy-economy-sim/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "pnpm --filter @fantasy-economy-sim/domain build && expo start --dev-client",
+    "android": "expo start --android --dev-client",
+    "ios": "expo start --ios --dev-client",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm --filter @fantasy-economy-sim/domain build && vitest run"
+  },
+  "dependencies": {
+    "@fantasy-economy-sim/domain": "workspace:*",
+    "expo": "~54.0.33",
+    "expo-dev-client": "~6.0.20",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}

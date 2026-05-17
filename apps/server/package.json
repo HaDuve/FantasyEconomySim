@@ -1,0 +1,22 @@
+{
+  "name": "@fantasy-economy-sim/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "pnpm --filter @fantasy-economy-sim/domain build && tsx watch src/index.ts",
+    "start": "pnpm --filter @fantasy-economy-sim/domain build && node dist/index.js",
+    "test": "pnpm --filter @fantasy-economy-sim/domain build && vitest run"
+  },
+  "dependencies": {
+    "@fantasy-economy-sim/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}
