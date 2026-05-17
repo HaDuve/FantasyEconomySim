@@ -1,0 +1,63 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Build artifacts (add stack-specific entries as the repo grows)
+node_modules/
+dist/
+build/
+bin/
+obj/
+*.log
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# skills.sh per-agent symlinks (canonical copy: .agents/skills/)
+skills/
+.claude/
+.codex/
+.aider-desk/
+.augment/
+.bob/
+.continue/
+.crush/
+.devin/
+.factory/
+.forge/
+.goose/
+.hermes/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.rovodev/
+.tabnine/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+.adal/
+.codeartsdoer/
+.codebuddy/
+.codemaker/
+.codestudio/
+.commandcode/
+.cortex/
+
+# Local issue scratch (if using local-markdown tracker)
+.scratch/
