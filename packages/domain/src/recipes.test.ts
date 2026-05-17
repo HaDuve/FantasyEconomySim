@@ -4,9 +4,12 @@ import { CONVERSION_RECIPES } from "./recipes.js";
 describe("conversion recipes", () => {
   it("matches v1 conversion table from domain glossary", () => {
     expect(CONVERSION_RECIPES).toEqual({
-      ingots: { ore: 2 },
-      potions: { herbs: 2, grain: 1 },
-      scrolls: { ingots: 1, potions: 1, lumber: 1 },
+      ingots: { inputs: { ore: 2 }, outputPerGlobalTick: 1 },
+      potions: { inputs: { herbs: 2, grain: 1 }, outputPerGlobalTick: 1 },
+      scrolls: {
+        inputs: { ingots: 1, potions: 1, lumber: 1 },
+        outputPerGlobalTick: 1,
+      },
     });
   });
 });

@@ -9,9 +9,18 @@ export {
   type ProfessionId,
   type StarterTrioProfessionId,
 } from "./professions.js";
-export { CONVERSION_RECIPES, type RecipeInputs } from "./recipes.js";
+export {
+  CONVERSION_RECIPES,
+  type ConversionOutputId,
+  type ConversionRecipe,
+  type RecipeInputs,
+} from "./recipes.js";
 export type {
+  CancelOrderCommand,
   ClientCommand,
   InventorySnapshot,
+  PlaceOrderCommand,
+  PoolBuyCommand,
+  SetAssignmentCommand,
   TickBroadcast,
 } from "./messages.js";

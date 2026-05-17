@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { WalletCrowns } from "./crown.js";
 import type { ClientCommand, TickBroadcast } from "./messages.js";
 
 describe("tick and command messages", () => {
@@ -6,7 +7,7 @@ describe("tick and command messages", () => {
     const broadcast: TickBroadcast = {
       kind: "tick",
       tickId: 1,
-      walletCrowns: 100,
+      walletCrowns: 100 satisfies WalletCrowns,
       inventory: {},
     };
     expect(broadcast.kind).toBe("tick");
