@@ -42,7 +42,7 @@ Productivity: `/grill-me` (no docs), `/caveman` (compressed replies), `/prototyp
 | Sync      | WebSocket, push per **global tick** | Server broadcasts; client sends commands        |
 | Server    | Node.js + TypeScript                | `apps/server`; see ADR-0002                     |
 | Auth      | Firebase Auth                       | Anonymous **guest** + **upgrade**; see ADR-0002 |
-| Datastore | PostgreSQL                          | Server-side only; see ADR-0003                  |
+| Datastore | PostgreSQL + Drizzle (`pg`)           | Server-only; `compose.yml` + `apps/server/drizzle/`; ADR-0003, ADR-0005 |
 | Monorepo  | pnpm workspaces                     | `packages/domain`; see ADR-0004                 |
 
 ## Engineering standards
@@ -62,9 +62,10 @@ Productivity: `/grill-me` (no docs), `/caveman` (compressed replies), `/prototyp
 │   ├── agents/        ← skill configuration
 │   └── adr/           ← architecture decision records
 ├── .agents/skills/    ← Matt Pocock skills (skills-lock.json pins versions)
+├── compose.yml        ← local Postgres (dev)
 ├── apps/
 │   ├── mobile/        ← Expo React Native client (TBD)
-│   └── server/        ← authoritative simulation API (TBD)
+│   └── server/        ← authoritative simulation API + Drizzle schema/migrations
 └── packages/
     └── domain/        ← shared types, pure domain logic (TBD)
 ```

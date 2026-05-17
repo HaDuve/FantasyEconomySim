@@ -35,7 +35,7 @@ _Avoid_: calling the player a "character" or "avatar" in product copy for v1.
 | **partial fill**        | When an **order** matches only part of its quantity; the remainder stays open on the book.                                       |
 | **price–time priority** | Per **resource**, best price wins; at equal price, earlier **order** wins.                                                       |
 | **GTC**                 | Good-til-cancelled — an **order** stays on the book until fully filled or explicitly cancelled.                                  |
-| **ledger**              | Authoritative record of balances, trades, and settlements.                                                                       |
+| **ledger**              | Authoritative economic state: current **wallet**, **inventory**, and open **orders**, plus an immutable history of **settlements**. |
 | **inventory**           | A player's held **resources** by type and quantity.                                                                              |
 | **settlement**          | Application of a matched trade to **wallet** and **inventory** on the **ledger**.                                                |
 | **supply pool**         | World-owned stock of **resources** replenished by **world drip**; sold via **pool buy**.                                         |
@@ -170,6 +170,7 @@ Military / advantage layer from brainstorming — see `docs/brainstorming/cursor
 - Each **player**: one **seat cap** per **public building** per **global tick**.
 - New **players** (including **guest**): **starter package** once on first connect; choose one **starter trio** **profession**.
 - **Guest** → **upgrade** keeps the same **player** id and **ledger** state.
+- The **ledger** holds live balances and the book; each **settlement** from a **tick auction** is retained as history (balances and open **orders** are updated in place).
 
 ## Example dialogue
 

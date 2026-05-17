@@ -8,13 +8,23 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "pnpm --filter @fantasy-economy-sim/domain build && tsx watch src/index.ts",
     "start": "pnpm --filter @fantasy-economy-sim/domain build && node dist/index.js",
-    "test": "pnpm --filter @fantasy-economy-sim/domain build && vitest run"
+    "test": "pnpm --filter @fantasy-economy-sim/domain build && vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:migrate:down": "tsx scripts/migrate-down.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@fantasy-economy-sim/domain": "workspace:*"
+    "@fantasy-economy-sim/domain": "workspace:*",
+    "drizzle-orm": "^0.44.2",
+    "pg": "^8.16.0"
   },
   "devDependencies": {
+    "@testcontainers/postgresql": "^10.28.0",
     "@types/node": "^22.15.21",
+    "@types/pg": "^8.15.4",
+    "dotenv": "^16.5.0",
+    "drizzle-kit": "^0.31.4",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4"
