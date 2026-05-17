@@ -4,7 +4,7 @@ Multiplayer fantasy economy simulation. Treat this repo like a AAA game codebase
 
 ## Agent skills
 
-Matt Pocock engineering skills are installed under `.agents/skills/` (see [mattpocock/skills](https://github.com/mattpocock/skills)). Invoke with `/` in Agent chat (e.g. `/grill-with-docs`, `/tdd`, `/setup-matt-pocock-skills`).
+Matt Pocock engineering skills are installed under `.agents/skills/` (see [mattpocock/skills](https://github.com/mattpocock/skills)). Project-specific skills live in the same folder. Invoke with `/` in Agent chat (e.g. `/grill-with-docs`, `/tdd`, `/review-pr`, `/setup-matt-pocock-skills`).
 
 ### Issue tracker
 
@@ -26,6 +26,7 @@ Single-context: `CONTEXT.md` at repo root and `docs/adr/`. See `docs/agents/doma
 | Spec         | `/to-prd`                        | After alignment, to capture a PRD as a GitHub issue |
 | Decompose    | `/to-issues`                     | Break PRDs/plans into vertical-slice issues         |
 | Build        | `/tdd`                           | Implementation with red-green-refactor              |
+| Review       | `/review-pr`                     | PR review vs CONTEXT, ADRs, slice acceptance        |
 | Debug        | `/diagnose`                      | Bugs, regressions, perf issues                      |
 | Architecture | `/improve-codebase-architecture` | Periodic deepening / module consolidation           |
 | Orient       | `/zoom-out`                      | Unfamiliar code areas                               |
