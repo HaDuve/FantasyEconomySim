@@ -50,6 +50,17 @@ describe("dev routes", () => {
     });
   });
 
+  it("rejects non-integer crowns with 400", async () => {
+    const response = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ crowns: 1.5 }),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_body" });
+  });
+
   it("rejects negative crowns with 400", async () => {
     const response = await fetch(`${baseUrl}/dev/players`, {
       method: "POST",

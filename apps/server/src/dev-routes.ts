@@ -1,5 +1,5 @@
 import type { ResourceId } from "@fantasy-economy-sim/domain";
-import { isResourceId } from "@fantasy-economy-sim/domain";
+import { isResourceId, isWalletCrowns } from "@fantasy-economy-sim/domain";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { Db } from "./db/client.js";
@@ -69,10 +69,7 @@ function isDevCreateBody(value: unknown): value is DevCreateBody {
     return false;
   }
 
-  if (
-    body.crowns !== undefined &&
-    (typeof body.crowns !== "number" || body.crowns < 0)
-  ) {
+  if (body.crowns !== undefined && !isWalletCrowns(body.crowns)) {
     return false;
   }
 

@@ -1,15 +1,23 @@
-import type { ResourceId, WalletCrowns } from "@fantasy-economy-sim/domain";
-import { isResourceId, RESOURCE_IDS } from "@fantasy-economy-sim/domain";
+import type {
+  InventorySnapshot,
+  ResourceId,
+  WalletCrowns,
+} from "@fantasy-economy-sim/domain";
+import {
+  assertWalletCrowns,
+  isResourceId,
+  RESOURCE_IDS,
+  toWalletCrowns,
+} from "@fantasy-economy-sim/domain";
 import { eq } from "drizzle-orm";
 
 import type { Db, DbExecutor } from "./client.js";
-import { inventory, wallets } from "./schema.js";
+import { rowsToInventorySnapshot } from "./inventory-snapshot.js";
 import { registerPlayer } from "./players.js";
+import { inventory, wallets } from "./schema.js";
 
 export type Wallet = typeof wallets.$inferSelect;
 export type InventoryRow = typeof inventory.$inferSelect;
-export type InventorySnapshot = Partial<Record<ResourceId, number>>;
-
 export type CreatePlayerLedgerInput = {
   firebaseUid?: string | null;
   crowns?: WalletCrowns;
@@ -26,7 +34,7 @@ export async function createPlayerWithLedger(
   db: Db,
   input: CreatePlayerLedgerInput = {},
 ): Promise<CreatePlayerLedgerResult> {
-  const crowns = input.crowns ?? 0;
+  const crowns = toWalletCrowns(input.crowns ?? 0);
   const inventoryInput = input.inventory ?? {};
 
   return db.transaction(async (tx) => {
@@ -56,6 +64,8 @@ export async function setWalletCrowns(
   playerId: string,
   crowns: WalletCrowns,
 ): Promise<Wallet> {
+  assertWalletCrowns(crowns);
+
   const [row] = await db
     .insert(wallets)
     .values({ playerId, crowns })
@@ -120,13 +130,5 @@ export async function getInventory(
     .from(inventory)
     .where(eq(inventory.playerId, playerId));
 
-  const snapshot: InventorySnapshot = {};
-
-  for (const row of rows) {
-    if (isResourceId(row.resourceId)) {
-      snapshot[row.resourceId] = row.quantity;
-    }
-  }
-
-  return snapshot;
+  return rowsToInventorySnapshot(rows);
 }
