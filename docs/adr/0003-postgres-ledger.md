@@ -6,4 +6,4 @@ All authoritative state — **ledger**, open **orders**, **inventory**, **wallet
 
 Rejected for v1: Firestore (weak fit for relational order book + tick transactions); SQLite (dev-only unless explicitly scoped).
 
-Confirm driver/ORM choice in a follow-up ADR or PR; use current [PostgreSQL](https://www.postgresql.org/docs/) and Node client docs at implementation time.
+Driver/ORM/migrations: [ADR-0005](./0005-drizzle-pg-migrations.md) (**Drizzle** + **`pg`**).

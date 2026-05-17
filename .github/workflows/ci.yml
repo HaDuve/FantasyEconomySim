@@ -22,3 +22,4 @@ jobs:
       - run: pnpm --filter @fantasy-economy-sim/domain build
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm test:integration

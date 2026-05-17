@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: fes
+      POSTGRES_PASSWORD: fes
+      POSTGRES_DB: fes_dev
+    volumes:
+      - fes_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fes -d fes_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  fes_pg_data:
