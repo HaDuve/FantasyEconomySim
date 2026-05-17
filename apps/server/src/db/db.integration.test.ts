@@ -19,86 +19,102 @@ const firstDownMigration = path.join(
   "down/0000_zippy_tattoo.down.sql",
 );
 
-describe("postgres persistence", () => {
-  let container: Awaited<ReturnType<PostgreSqlContainer["start"]>>;
-  let connectionString: string;
+type StartedPostgres = Awaited<ReturnType<PostgreSqlContainer["start"]>>;
 
-  beforeAll(async () => {
-    container = await new PostgreSqlContainer("postgres:16-alpine").start();
-    connectionString = container.getConnectionUri();
-  }, 120_000);
+function describeWithPostgres(
+  suiteName: string,
+  run: (connectionString: () => string) => void,
+): void {
+  describe(suiteName, () => {
+    let container: StartedPostgres;
+    let connectionString = "";
 
-  afterAll(async () => {
-    await container?.stop();
+    beforeAll(async () => {
+      container = await new PostgreSqlContainer("postgres:16-alpine").start();
+      connectionString = container.getConnectionUri();
+    }, 120_000);
+
+    afterAll(async () => {
+      await container?.stop();
+    });
+
+    run(() => connectionString);
   });
+}
 
-  async function withMigratedDatabase<T>(
-    run: (ctx: { pool: Pool; db: ReturnType<typeof createDb> }) => Promise<T>,
-  ): Promise<T> {
-    const pool = new Pool({ connectionString });
+async function withMigratedDatabase<T>(
+  connectionString: string,
+  run: (ctx: { pool: Pool; db: ReturnType<typeof createDb> }) => Promise<T>,
+): Promise<T> {
+  const pool = new Pool({ connectionString });
 
-    try {
-      await runMigrations(pool);
-      const db = createDb(pool);
-      return await run({ pool, db });
-    } finally {
-      await pool.end();
-    }
+  try {
+    await runMigrations(pool);
+    const db = createDb(pool);
+    return await run({ pool, db });
+  } finally {
+    await pool.end();
   }
+}
 
-  it("registers a guest player after migrations", async () => {
-    await withMigratedDatabase(async ({ db }) => {
-      const guest = await registerPlayer(db);
+describe("postgres persistence", () => {
+  describeWithPostgres("after migrations", (getUri) => {
+    it("registers a guest player", async () => {
+      await withMigratedDatabase(getUri(), async ({ db }) => {
+        const guest = await registerPlayer(db);
 
-      const found = await getPlayerById(db, guest.id);
+        const found = await getPlayerById(db, guest.id);
 
-      expect(found).toEqual(guest);
-      expect(found?.firebaseUid).toBeNull();
-    });
-  });
-
-  it("registers an upgraded player by firebase uid", async () => {
-    await withMigratedDatabase(async ({ db }) => {
-      const player = await registerPlayer(db, {
-        firebaseUid: "firebase-uid-42",
+        expect(found).toEqual(guest);
+        expect(found?.firebaseUid).toBeNull();
       });
+    });
 
-      const found = await getPlayerByFirebaseUid(db, "firebase-uid-42");
+    it("registers an upgraded player by firebase uid", async () => {
+      await withMigratedDatabase(getUri(), async ({ db }) => {
+        const player = await registerPlayer(db, {
+          firebaseUid: "firebase-uid-42",
+        });
 
-      expect(found).toEqual(player);
+        const found = await getPlayerByFirebaseUid(db, "firebase-uid-42");
+
+        expect(found).toEqual(player);
+      });
+    });
+
+    it("applies migrations idempotently", async () => {
+      const pool = new Pool({ connectionString: getUri() });
+
+      try {
+        await runMigrations(pool);
+        await expect(runMigrations(pool)).resolves.toBeUndefined();
+
+        const db = createDb(pool);
+        const player = await registerPlayer(db);
+
+        expect(await getPlayerById(db, player.id)).toEqual(player);
+      } finally {
+        await pool.end();
+      }
     });
   });
 
-  it("applies migrations idempotently", async () => {
-    const pool = new Pool({ connectionString });
+  describeWithPostgres("paired down migration", (getUri) => {
+    it("reverses schema so players cannot be registered", async () => {
+      const pool = new Pool({ connectionString: getUri() });
+      const downSql = readFileSync(firstDownMigration, "utf8");
 
-    try {
-      await runMigrations(pool);
-      await expect(runMigrations(pool)).resolves.toBeUndefined();
+      try {
+        await runMigrations(pool);
+        const db = createDb(pool);
+        await registerPlayer(db);
 
-      const db = createDb(pool);
-      const player = await registerPlayer(db);
+        await applyDownSql(pool, downSql);
 
-      expect(await getPlayerById(db, player.id)).toEqual(player);
-    } finally {
-      await pool.end();
-    }
-  });
-
-  it("reverses schema with a paired down migration", async () => {
-    const pool = new Pool({ connectionString });
-    const downSql = readFileSync(firstDownMigration, "utf8");
-
-    try {
-      await runMigrations(pool);
-      const db = createDb(pool);
-      await registerPlayer(db);
-
-      await applyDownSql(pool, downSql);
-
-      await expect(registerPlayer(createDb(pool))).rejects.toThrow();
-    } finally {
-      await pool.end();
-    }
+        await expect(registerPlayer(createDb(pool))).rejects.toThrow();
+      } finally {
+        await pool.end();
+      }
+    });
   });
 });

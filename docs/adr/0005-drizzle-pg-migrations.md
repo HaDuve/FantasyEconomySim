@@ -8,9 +8,9 @@
 
 **Migrations (up):** edit schema → `pnpm --filter @fantasy-economy-sim/server db:generate` → review SQL → `db:migrate`. No `drizzle-kit push` on merged work.
 
-**Migrations (down):** default dev reset — `docker compose down -v`, `docker compose up -d`, `db:migrate`. For non-trivial changes, add a paired script under `drizzle/down/` and run `pnpm --filter @fantasy-economy-sim/server db:migrate:down -- <file>`. Drizzle native rollback is not released yet ([drizzle-orm#2352](https://github.com/drizzle-team/drizzle-orm/issues/2352)).
+**Migrations (down):** default dev reset — `docker compose down -v`, `docker compose up -d`, `db:migrate`. For non-trivial changes, add a paired script under `drizzle/down/` and run `db:migrate:down -- <file>`. `drizzle-kit`, `db:migrate`, and `db:migrate:down` all load repo-root `.env` via `src/db/env.ts` (`cp .env.example .env` first). Drizzle native rollback is not released yet ([drizzle-orm#2352](https://github.com/drizzle-team/drizzle-orm/issues/2352)).
 
-**Tests:** local hacking uses Compose; DB integration tests use Testcontainers (`src/db/db.integration.test.ts`).
+**Tests:** `pnpm test` (unit only). `pnpm test:integration` requires a Docker engine (Testcontainers; fails fast if unavailable). CI runs both. Local Postgres hacking uses `compose.yml`.
 
 Rejected for v1: **Prisma** (heavy client, awkward multi-step tick transactions); **raw `pg` only** (CRUD boilerplate); **stored-procedure tick auction** (game logic in SQL); **`packages/db`** (no second consumer); **`drizzle-kit push`** as team workflow (schema drift).
 

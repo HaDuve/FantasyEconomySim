@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { Pool } from "pg";
 
+import { loadRepoEnv } from "../src/db/env.js";
 import { applyDownSql } from "../src/db/migrate.js";
+
+loadRepoEnv();
 
 const file = process.argv[2];
 if (!file) {

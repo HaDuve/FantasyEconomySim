@@ -16,9 +16,9 @@ export function requireDocker(): void {
 
   throw new Error(
     [
-      "Docker is required for integration tests.",
-      "Start Docker Desktop, or run: pnpm db:up",
-      "Then: pnpm --filter @fantasy-economy-sim/server test:integration",
+      "Docker is required for integration tests (Testcontainers).",
+      "Start Docker Desktop (or another Docker engine), then run:",
+      "pnpm test:integration",
     ].join(" "),
   );
 }
