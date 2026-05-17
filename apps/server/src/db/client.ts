@@ -1,9 +1,22 @@
+import type { ExtractTablesWithRelations } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
+import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 import { Pool } from "pg";
 
 import * as schema from "./schema.js";
 
+type Schema = typeof schema;
+type SchemaRelations = ExtractTablesWithRelations<Schema>;
+
 export type Db = ReturnType<typeof createDb>;
+export type DbTransaction = PgTransaction<
+  NodePgQueryResultHKT,
+  Schema,
+  SchemaRelations
+>;
+/** Database or in-flight transaction — use for ledger writes that must compose. */
+export type DbExecutor = Db | DbTransaction;
 
 export function createDb(connectionStringOrPool: string | Pool) {
   const pool =

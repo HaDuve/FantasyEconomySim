@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS "inventory";
+DROP TABLE IF EXISTS "wallets";
