@@ -1,11 +1,15 @@
 import type { ResourceId } from "@fantasy-economy-sim/domain";
 import { isResourceId } from "@fantasy-economy-sim/domain";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 
-import type { Db, DbExecutor } from "../db/client.js";
-import { getInventoryQuantity } from "../db/ledger.js";
-import { getWallet } from "../db/ledger.js";
+import type { DbExecutor } from "../db/client.js";
+import { getInventoryQuantity, getWallet } from "../db/ledger.js";
 import { orders } from "../db/schema.js";
+import {
+  InsufficientCrownsError,
+  InsufficientInventoryError,
+  OrderNotFoundError,
+} from "./errors.js";
 
 export type OrderSide = "buy" | "sell";
 
@@ -26,6 +30,11 @@ export type PlaceOrderInput = {
   quantity: number;
 };
 
+/**
+ * Open-order commitment model (v1): placement rejects when Σ open exposure
+ * plus the new order would exceed wallet crowns (buys) or on-hand inventory
+ * (sells per resource). Balances are not debited until tick auction settlement.
+ */
 function assertPlaceOrderInput(input: PlaceOrderInput): void {
   if (!isResourceId(input.resourceId)) {
     throw new Error(`Unknown resource: ${input.resourceId}`);
@@ -56,6 +65,48 @@ export function rowToOpenOrder(row: typeof orders.$inferSelect): OpenOrder {
   };
 }
 
+async function sumOpenBuyNotional(
+  db: DbExecutor,
+  playerId: string,
+): Promise<number> {
+  const [row] = await db
+    .select({
+      total: sql<number>`coalesce(sum(${orders.price} * ${orders.quantity}), 0)`,
+    })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.playerId, playerId),
+        eq(orders.side, "buy"),
+        gt(orders.quantity, 0),
+      ),
+    );
+
+  return Number(row?.total ?? 0);
+}
+
+async function sumOpenSellQuantity(
+  db: DbExecutor,
+  playerId: string,
+  resourceId: ResourceId,
+): Promise<number> {
+  const [row] = await db
+    .select({
+      total: sql<number>`coalesce(sum(${orders.quantity}), 0)`,
+    })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.playerId, playerId),
+        eq(orders.side, "sell"),
+        eq(orders.resourceId, resourceId),
+        gt(orders.quantity, 0),
+      ),
+    );
+
+  return Number(row?.total ?? 0);
+}
+
 export async function placeOrder(
   db: DbExecutor,
   playerId: string,
@@ -66,16 +117,22 @@ export async function placeOrder(
   if (input.side === "buy") {
     const wallet = await getWallet(db, playerId);
     const crowns = wallet?.crowns ?? 0;
+    const openNotional = await sumOpenBuyNotional(db, playerId);
     const required = input.price * input.quantity;
 
-    if (crowns < required) {
-      throw new Error("Insufficient crowns for buy order");
+    if (openNotional + required > crowns) {
+      throw new InsufficientCrownsError();
     }
   } else {
     const held = await getInventoryQuantity(db, playerId, input.resourceId);
+    const openQuantity = await sumOpenSellQuantity(
+      db,
+      playerId,
+      input.resourceId,
+    );
 
-    if (held < input.quantity) {
-      throw new Error("Insufficient inventory for sell order");
+    if (openQuantity + input.quantity > held) {
+      throw new InsufficientInventoryError();
     }
   }
 
@@ -121,6 +178,6 @@ export async function cancelOrder(
     .returning({ id: orders.id });
 
   if (deleted.length === 0) {
-    throw new Error("Order not found");
+    throw new OrderNotFoundError();
   }
 }

@@ -65,6 +65,7 @@ export const orders = pgTable(
     resourceId: text("resource_id").notNull(),
     side: text("side").notNull(),
     price: integer("price").notNull(),
+    /** Open qty; 0 = fully filled (row kept for settlement FKs). */
     quantity: integer("quantity").notNull(),
     placedAt: timestamp("placed_at", { withTimezone: true })
       .notNull()

@@ -144,9 +144,9 @@
           "name": "orders_price_positive",
           "value": "\"orders\".\"price\" > 0"
         },
-        "orders_quantity_positive": {
-          "name": "orders_quantity_positive",
-          "value": "\"orders\".\"quantity\" > 0"
+        "orders_quantity_non_negative": {
+          "name": "orders_quantity_non_negative",
+          "value": "\"orders\".\"quantity\" >= 0"
         },
         "orders_resource_id_valid": {
           "name": "orders_resource_id_valid",

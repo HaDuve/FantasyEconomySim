@@ -20,6 +20,7 @@ import { rowToOpenOrder } from "./orders.js";
 
 export type TickAuctionResult = {
   fillsApplied: number;
+  fillsSkipped: number;
 };
 
 function toLimitOrder(order: OpenOrder): LimitOrder {
@@ -31,10 +32,29 @@ function toLimitOrder(order: OpenOrder): LimitOrder {
   };
 }
 
+/** Open orders only; quantity 0 means fully filled (closed), kept for settlement FKs. */
 export async function listOpenOrders(db: DbExecutor): Promise<OpenOrder[]> {
   const rows = await db.select().from(orders).where(gt(orders.quantity, 0));
 
   return rows.map(rowToOpenOrder);
+}
+
+function canSettleFill(
+  db: DbExecutor,
+  resourceId: ResourceId,
+  fill: Fill,
+  buyOrder: OpenOrder,
+  sellOrder: OpenOrder,
+): Promise<boolean> {
+  const cost = fill.price * fill.quantity;
+
+  return Promise.all([
+    getWallet(db, buyOrder.playerId),
+    getInventoryQuantity(db, sellOrder.playerId, resourceId),
+  ]).then(([buyerWallet, sellerHeld]) => {
+    const buyerCrowns = buyerWallet?.crowns ?? 0;
+    return buyerCrowns >= cost && sellerHeld >= fill.quantity;
+  });
 }
 
 async function applyFill(
@@ -48,21 +68,11 @@ async function applyFill(
 
   const buyerWallet = await getWallet(db, buyOrder.playerId);
   const buyerCrowns = buyerWallet?.crowns ?? 0;
-
-  if (buyerCrowns < cost) {
-    throw new Error("Settlement would drive buyer crowns negative");
-  }
-
   const sellerHeld = await getInventoryQuantity(
     db,
     sellOrder.playerId,
     resourceId,
   );
-
-  if (sellerHeld < fill.quantity) {
-    throw new Error("Settlement would drive seller inventory negative");
-  }
-
   const buyerHeld = await getInventoryQuantity(db, buyOrder.playerId, resourceId);
   const sellerWallet = await getWallet(db, sellOrder.playerId);
   const sellerCrowns = sellerWallet?.crowns ?? 0;
@@ -101,69 +111,71 @@ async function syncOrderQuantity(
   await db.update(orders).set({ quantity }).where(eq(orders.id, orderId));
 }
 
-export async function runTickAuction(db: Db): Promise<TickAuctionResult> {
-  return db.transaction(async (tx) => {
-    const openOrders = await listOpenOrders(tx);
-    const ordersById = new Map(openOrders.map((order) => [order.id, order]));
-    let fillsApplied = 0;
+async function runResourceTickAuction(
+  tx: DbExecutor,
+  resourceId: ResourceId,
+): Promise<{ fillsApplied: number; fillsSkipped: number }> {
+  let fillsApplied = 0;
+  let fillsSkipped = 0;
 
-    for (const resourceId of RESOURCE_IDS) {
-      const resourceOrders = openOrders.filter(
-        (order) => order.resourceId === resourceId,
-      );
+  while (true) {
+    const resourceOrders = (await listOpenOrders(tx)).filter(
+      (order) => order.resourceId === resourceId,
+    );
 
-      if (resourceOrders.length === 0) {
-        continue;
-      }
-
-      const bids = resourceOrders
-        .filter((order) => order.side === "buy")
-        .map(toLimitOrder);
-      const asks = resourceOrders
-        .filter((order) => order.side === "sell")
-        .map(toLimitOrder);
-
-      const { fills, remainingBids, remainingAsks } = match(
-        resourceId,
-        bids,
-        asks,
-      );
-
-      const remainingById = new Map(
-        [...remainingBids, ...remainingAsks].map((order) => [
-          order.orderId,
-          order.quantity,
-        ]),
-      );
-
-      for (const fill of fills) {
-        const buyOrder = ordersById.get(fill.buyOrderId);
-        const sellOrder = ordersById.get(fill.sellOrderId);
-
-        if (!buyOrder || !sellOrder) {
-          throw new Error("Matched order missing from open book");
-        }
-
-        await applyFill(tx, resourceId, fill, buyOrder, sellOrder);
-        fillsApplied += 1;
-      }
-
-      for (const order of resourceOrders) {
-        const remainingQty = remainingById.get(order.id);
-
-        if (remainingQty !== undefined) {
-          await syncOrderQuantity(tx, order.id, remainingQty);
-        } else if (
-          fills.some(
-            (fill) =>
-              fill.buyOrderId === order.id || fill.sellOrderId === order.id,
-          )
-        ) {
-          await syncOrderQuantity(tx, order.id, 0);
-        }
-      }
+    if (resourceOrders.length === 0) {
+      break;
     }
 
-    return { fillsApplied };
+    const bids = resourceOrders
+      .filter((order) => order.side === "buy")
+      .map(toLimitOrder);
+    const asks = resourceOrders
+      .filter((order) => order.side === "sell")
+      .map(toLimitOrder);
+    const { fills } = match(resourceId, bids, asks);
+
+    if (fills.length === 0) {
+      break;
+    }
+
+    const fill = fills[0]!;
+    const buyOrder = resourceOrders.find((order) => order.id === fill.buyOrderId);
+    const sellOrder = resourceOrders.find((order) => order.id === fill.sellOrderId);
+
+    if (!buyOrder || !sellOrder) {
+      throw new Error("Matched order missing from open book");
+    }
+
+    if (!(await canSettleFill(tx, resourceId, fill, buyOrder, sellOrder))) {
+      fillsSkipped += 1;
+      break;
+    }
+
+    await applyFill(tx, resourceId, fill, buyOrder, sellOrder);
+    fillsApplied += 1;
+
+    const buyRemaining = buyOrder.quantity - fill.quantity;
+    const sellRemaining = sellOrder.quantity - fill.quantity;
+
+    await syncOrderQuantity(tx, buyOrder.id, buyRemaining);
+    await syncOrderQuantity(tx, sellOrder.id, sellRemaining);
+  }
+
+  return { fillsApplied, fillsSkipped };
+}
+
+export async function runTickAuction(db: Db): Promise<TickAuctionResult> {
+  return db.transaction(async (tx) => {
+    let fillsApplied = 0;
+    let fillsSkipped = 0;
+
+    for (const resourceId of RESOURCE_IDS) {
+      const result = await runResourceTickAuction(tx, resourceId);
+      fillsApplied += result.fillsApplied;
+      fillsSkipped += result.fillsSkipped;
+    }
+
+    return { fillsApplied, fillsSkipped };
   });
 }

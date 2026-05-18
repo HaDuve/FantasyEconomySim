@@ -9,6 +9,8 @@ import {
   getWallet,
 } from "./db/ledger.js";
 import { getPlayerById } from "./db/players.js";
+import { isMarketError } from "./market/errors.js";
+import { cancelOrder, placeOrder, type PlaceOrderInput } from "./market/orders.js";
 import { runTickAuction } from "./market/tick-auction.js";
 
 type DevCreateBody = {
@@ -49,10 +51,28 @@ function sendJson(
   response.end(JSON.stringify(body));
 }
 
-function parsePlayerId(url: string): string | undefined {
+function parseLedgerPlayerId(url: string): string | undefined {
   const match = /^\/dev\/players\/([^/]+)\/ledger$/.exec(url);
 
   return match?.[1];
+}
+
+function parseOrdersPlayerId(url: string): string | undefined {
+  const match = /^\/dev\/players\/([^/]+)\/orders$/.exec(url);
+
+  return match?.[1];
+}
+
+function parseCancelOrderPath(
+  url: string,
+): { playerId: string; orderId: string } | undefined {
+  const match = /^\/dev\/players\/([^/]+)\/orders\/([^/]+)$/.exec(url);
+
+  if (!match) {
+    return undefined;
+  }
+
+  return { playerId: match[1]!, orderId: match[2]! };
 }
 
 function isDevCreateBody(value: unknown): value is DevCreateBody {
@@ -93,6 +113,32 @@ function isDevCreateBody(value: unknown): value is DevCreateBody {
   return true;
 }
 
+function isPlaceOrderBody(value: unknown): value is PlaceOrderInput {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const body = value as PlaceOrderInput;
+
+  return (
+    isResourceId(body.resourceId) &&
+    (body.side === "buy" || body.side === "sell") &&
+    Number.isInteger(body.price) &&
+    body.price > 0 &&
+    Number.isInteger(body.quantity) &&
+    body.quantity > 0
+  );
+}
+
+function sendMarketError(response: ServerResponse, error: unknown): void {
+  if (isMarketError(error)) {
+    sendJson(response, 400, { error: error.code, message: error.message });
+    return;
+  }
+
+  sendJson(response, 500, { error: "internal_error" });
+}
+
 export async function handleDevRoute(
   request: IncomingMessage,
   response: ServerResponse,
@@ -108,11 +154,63 @@ export async function handleDevRoute(
     try {
       const result = await runTickAuction(db);
       sendJson(response, 200, result);
-    } catch {
-      sendJson(response, 500, { error: "internal_error" });
+    } catch (error) {
+      sendMarketError(response, error);
     }
 
     return true;
+  }
+
+  if (method === "POST") {
+    const playerId = parseOrdersPlayerId(url);
+
+    if (playerId) {
+      try {
+        const player = await getPlayerById(db, playerId);
+
+        if (!player) {
+          sendJson(response, 404, { error: "not_found" });
+          return true;
+        }
+
+        const body = await readJsonBody(request);
+
+        if (!isPlaceOrderBody(body)) {
+          sendJson(response, 400, { error: "invalid_body" });
+          return true;
+        }
+
+        const order = await placeOrder(db, playerId, body);
+        sendJson(response, 201, { order });
+      } catch (error) {
+        sendMarketError(response, error);
+      }
+
+      return true;
+    }
+  }
+
+  if (method === "DELETE") {
+    const cancelPath = parseCancelOrderPath(url);
+
+    if (cancelPath) {
+      try {
+        const player = await getPlayerById(db, cancelPath.playerId);
+
+        if (!player) {
+          sendJson(response, 404, { error: "not_found" });
+          return true;
+        }
+
+        await cancelOrder(db, cancelPath.playerId, cancelPath.orderId);
+        response.writeHead(204);
+        response.end();
+      } catch (error) {
+        sendMarketError(response, error);
+      }
+
+      return true;
+    }
   }
 
   if (method === "POST" && url === "/dev/players") {
@@ -139,7 +237,7 @@ export async function handleDevRoute(
   }
 
   if (method === "GET") {
-    const playerId = parsePlayerId(url);
+    const playerId = parseLedgerPlayerId(url);
 
     if (!playerId) {
       sendJson(response, 404, { error: "not_found" });

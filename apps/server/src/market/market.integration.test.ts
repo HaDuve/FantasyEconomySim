@@ -6,6 +6,7 @@ import { createDb } from "../db/client.js";
 import { createPlayerWithLedger } from "../db/ledger.js";
 import { runMigrations } from "../db/migrate.js";
 import { getInventory, getWallet } from "../db/ledger.js";
+import { InsufficientCrownsError } from "./errors.js";
 import { cancelOrder, getOpenOrder, placeOrder } from "./orders.js";
 import { runTickAuction } from "./tick-auction.js";
 
@@ -63,6 +64,29 @@ describe("market", () => {
     await cancelOrder(db, playerId, placed.id);
 
     expect(await getOpenOrder(db, placed.id)).toBeUndefined();
+  });
+
+  it("rejects a second buy when open orders would over-commit wallet crowns", async () => {
+    const db = createDb(pool);
+    const { playerId } = await createPlayerWithLedger(db, { crowns: 100 });
+
+    await placeOrder(db, playerId, {
+      resourceId: "grain",
+      side: "buy",
+      price: 10,
+      quantity: 6,
+    });
+
+    await expect(
+      placeOrder(db, playerId, {
+        resourceId: "ore",
+        side: "buy",
+        price: 10,
+        quantity: 5,
+      }),
+    ).rejects.toThrow(InsufficientCrownsError);
+
+    expect((await getWallet(db, playerId))?.crowns).toBe(100);
   });
 
   it("runs a manual tick auction with partial fill and correct settlements", async () => {
