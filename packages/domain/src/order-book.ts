@@ -26,6 +26,12 @@ export function match(
   asks: LimitOrder[],
 ): MatchResult {
   assertTradeableResource(resource);
+  for (const bid of bids) {
+    assertPositiveQuantity(bid);
+  }
+  for (const ask of asks) {
+    assertPositiveQuantity(ask);
+  }
 
   const remainingBids = sortBids(bids.map(cloneOrder));
   const remainingAsks = sortAsks(asks.map(cloneOrder));
@@ -99,5 +105,11 @@ function compareAsks(a: LimitOrder, b: LimitOrder): number {
 function assertTradeableResource(resource: string): asserts resource is ResourceId {
   if (!isResourceId(resource)) {
     throw new Error(`Resource is not tradeable on the market: ${resource}`);
+  }
+}
+
+function assertPositiveQuantity(order: LimitOrder): void {
+  if (!Number.isInteger(order.quantity) || order.quantity <= 0) {
+    throw new Error(`Invalid order quantity: ${order.quantity}`);
   }
 }

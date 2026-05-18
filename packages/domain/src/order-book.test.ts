@@ -103,6 +103,27 @@ describe("OrderBook.match", () => {
     ]);
   });
 
+  it("matches best-priced bid before worse-priced bid when one ask crosses both", () => {
+    const bids: LimitOrder[] = [
+      { orderId: "b-low", price: 12, quantity: 2, placedAt: 2 },
+      { orderId: "b-high", price: 15, quantity: 2, placedAt: 1 },
+    ];
+    const asks: LimitOrder[] = [
+      { orderId: "a1", price: 10, quantity: 5, placedAt: 1 },
+    ];
+
+    const result = match("scrolls", bids, asks);
+
+    expect(result.fills).toEqual([
+      { buyOrderId: "b-high", sellOrderId: "a1", price: 10, quantity: 2 },
+      { buyOrderId: "b-low", sellOrderId: "a1", price: 10, quantity: 2 },
+    ]);
+    expect(result.remainingBids).toEqual([]);
+    expect(result.remainingAsks).toEqual([
+      { orderId: "a1", price: 10, quantity: 1, placedAt: 1 },
+    ]);
+  });
+
   it("matches best-priced ask before worse-priced ask", () => {
     const bids: LimitOrder[] = [
       { orderId: "b1", price: 15, quantity: 5, placedAt: 1 },
@@ -122,6 +143,29 @@ describe("OrderBook.match", () => {
       { orderId: "b1", price: 15, quantity: 1, placedAt: 1 },
     ]);
     expect(result.remainingAsks).toEqual([]);
+  });
+
+  it("rejects orders with non-positive quantity", () => {
+    const validAsk: LimitOrder = {
+      orderId: "a1",
+      price: 10,
+      quantity: 1,
+      placedAt: 1,
+    };
+
+    expect(() =>
+      match("grain", [{ orderId: "b1", price: 10, quantity: 0, placedAt: 1 }], [
+        validAsk,
+      ]),
+    ).toThrow(/Invalid order quantity/);
+
+    expect(() =>
+      match(
+        "grain",
+        [{ orderId: "b1", price: 10, quantity: 1, placedAt: 1 }],
+        [{ orderId: "a1", price: 10, quantity: -1, placedAt: 1 }],
+      ),
+    ).toThrow(/Invalid order quantity/);
   });
 
   it("rejects crown as a tradeable resource", () => {
