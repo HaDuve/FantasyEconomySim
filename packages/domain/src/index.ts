@@ -29,3 +29,9 @@ export type {
   SetAssignmentCommand,
   TickBroadcast,
 } from "./messages.js";
+export {
+  match,
+  type Fill,
+  type LimitOrder,
+  type MatchResult,
+} from "./order-book.js";

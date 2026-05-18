@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CONVERSION_RECIPES,
+  match,
   type CancelOrderCommand,
   type PlaceOrderCommand,
   type PoolBuyCommand,
@@ -35,6 +36,16 @@ describe("public API", () => {
     expect(cancel.kind).toBe("cancel_order");
     expect(poolBuy.kind).toBe("pool_buy");
     expect(setAssignment.kind).toBe("set_assignment");
+  });
+
+  it("exports match for tick auction from the package root", () => {
+    const result = match(
+      "grain",
+      [{ orderId: "b1", price: 10, quantity: 1, placedAt: 1 }],
+      [{ orderId: "a1", price: 9, quantity: 1, placedAt: 2 }],
+    );
+
+    expect(result.fills).toHaveLength(1);
   });
 
   it("documents conversion output yield per global tick", () => {
