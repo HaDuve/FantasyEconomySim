@@ -7,7 +7,7 @@ import {
   type ResourceId,
   type SupplyPoolSnapshot,
 } from "@fantasy-economy-sim/domain";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import type { Db, DbExecutor } from "../db/client.js";
 import {
@@ -58,8 +58,17 @@ async function setSupplyPoolQuantity(
     .where(eq(supplyPool.resourceId, resourceId));
 }
 
+async function lockSupplyPoolForUpdate(db: DbExecutor): Promise<void> {
+  await db
+    .select()
+    .from(supplyPool)
+    .orderBy(asc(supplyPool.resourceId))
+    .for("update");
+}
+
 export async function runWorldDrip(db: Db): Promise<SupplyPoolSnapshot> {
   return db.transaction(async (tx) => {
+    await lockSupplyPoolForUpdate(tx);
     const current = await getSupplyPool(tx);
     const next = applyWorldDrip(current);
 
@@ -92,11 +101,11 @@ export async function poolBuy(
     await lockWalletForUpdate(tx, playerId);
     await lockInventoryForUpdate(tx, playerId, resourceId);
 
+    await lockSupplyPoolForUpdate(tx);
     const poolRows = await tx
       .select()
       .from(supplyPool)
       .where(eq(supplyPool.resourceId, resourceId))
-      .for("update")
       .limit(1);
     const poolHeld = poolRows[0]?.quantity ?? 0;
 

@@ -14,6 +14,7 @@ import {
   InsufficientCrownsError,
   NotPoolResourceError,
 } from "./errors.js";
+import { placeOrder } from "./orders.js";
 import { getSupplyPool, poolBuy, runGlobalTick, runWorldDrip } from "./supply-pool.js";
 
 describe("supply pool", () => {
@@ -98,12 +99,61 @@ describe("supply pool", () => {
     expect(openOrders).toHaveLength(0);
   });
 
-  it("runs world drip before tick auction on global tick", async () => {
+  it("world drip adds to stock remaining after pool buy", async () => {
     const db = createDb(pool);
     const { playerId } = await createPlayerWithLedger(db, { crowns: 100 });
 
-    await runGlobalTick(db);
+    await runWorldDrip(db);
+    await poolBuy(db, playerId, "grain", 5);
+    await runWorldDrip(db);
 
+    expect((await getSupplyPool(db)).grain).toBe(
+      WORLD_DRIP_PER_TICK.grain - 5 + WORLD_DRIP_PER_TICK.grain,
+    );
+  });
+
+  it("concurrent pool buy and world drip preserve buy deduction", async () => {
+    const db = createDb(pool);
+    const { playerId } = await createPlayerWithLedger(db, { crowns: 10_000 });
+
+    await runWorldDrip(db);
+
+    await Promise.all([
+      poolBuy(db, playerId, "grain", 5),
+      runWorldDrip(db),
+    ]);
+
+    expect((await getSupplyPool(db)).grain).toBe(
+      WORLD_DRIP_PER_TICK.grain * 2 - 5,
+    );
+  });
+
+  it("runs world drip then tick auction on global tick", async () => {
+    const db = createDb(pool);
+    const buyer = await createPlayerWithLedger(db, { crowns: 120 });
+    const seller = await createPlayerWithLedger(db, {
+      crowns: 0,
+      inventory: { grain: 20 },
+    });
+
+    await placeOrder(db, buyer.playerId, {
+      resourceId: "grain",
+      side: "buy",
+      price: 12,
+      quantity: 10,
+    });
+    await placeOrder(db, seller.playerId, {
+      resourceId: "grain",
+      side: "sell",
+      price: 10,
+      quantity: 4,
+    });
+
+    const { fillsApplied } = await runGlobalTick(db);
+
+    expect(fillsApplied).toBe(1);
     expect(await getSupplyPool(db)).toEqual(WORLD_DRIP_PER_TICK);
+    expect((await getWallet(db, buyer.playerId))?.crowns).toBe(80);
+    expect(await getInventory(db, buyer.playerId)).toEqual({ grain: 4 });
   });
 });
