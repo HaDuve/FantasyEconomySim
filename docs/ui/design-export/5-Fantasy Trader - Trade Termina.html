@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Trader - Trade Terminal (Resource Detail)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.plot.ly/plotly-3.1.1.min.js"></script>
+
+    <style>
+        
+
+        body { margin: 0; padding: 0; font-family: var(--font-serif); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--background); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        
+        .glass-panel {
+            background: rgba(255, 252, 245, 0.85); /* --card with opacity */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(74, 63, 53, 0.1), 0 2px 4px -1px rgba(74, 63, 53, 0.06);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-sans);
+        }
+
+        .order-book-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            position: relative;
+        }
+        .order-book-row:hover {
+            background: rgba(236, 229, 216, 0.5); /* muted with opacity */
+        }
+        .depth-bar-bid {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            background: rgba(45, 79, 30, 0.1); /* Forest green tint */
+            z-index: 0;
+        }
+        .depth-bar-ask {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            background: rgba(181, 74, 53, 0.1); /* Destructive tint */
+            z-index: 0;
+        }
+    </style>
+<style>
+:root {
+          --background: #f5f1e6;
+          --foreground: #4a3f35;
+          --card: #fffcf5;
+          --card-foreground: #4a3f35;
+          --popover: #fffcf5;
+          --popover-foreground: #4a3f35;
+          --primary: #a67c52;
+          --primary-foreground: #ffffff;
+          --secondary: #e2d8c3;
+          --secondary-foreground: #5c4d3f;
+          --muted: #ece5d8;
+          --muted-foreground: #7d6b56;
+          --accent: #d4c8aa;
+          --accent-foreground: #4a3f35;
+          --destructive: #b54a35;
+          --destructive-foreground: #ffffff;
+          --border: #dbd0ba;
+          --input: #dbd0ba;
+          --ring: #a67c52;
+          --chart-1: #a67c52;
+          --chart-2: #8d6e4c;
+          --chart-3: #735a3a;
+          --chart-4: #b3906f;
+          --chart-5: #c0a080;
+          --sidebar: #ece5d8;
+          --sidebar-foreground: #4a3f35;
+          --sidebar-primary: #a67c52;
+          --sidebar-primary-foreground: #ffffff;
+          --sidebar-accent: #d4c8aa;
+          --sidebar-accent-foreground: #4a3f35;
+          --sidebar-border: #dbd0ba;
+          --sidebar-ring: #a67c52;
+          --font-sans: Libre Baskerville, serif;
+          --font-serif: Lora, serif;
+          --font-mono: IBM Plex Mono, monospace;
+          --radius: 0.25rem;
+          --shadow-x: 2px;
+          --shadow-y: 3px;
+          --shadow-blur: 5px;
+          --shadow-spread: 0px;
+          --shadow-opacity: 0.12;
+          --shadow-color: hsl(28 13% 20%);
+          --shadow-2xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
+          --shadow-xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
+          --shadow-sm: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
+          --shadow: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
+          --shadow-md: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 2px 4px -1px hsl(28 13% 20% / 0.12);
+          --shadow-lg: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 4px 6px -1px hsl(28 13% 20% / 0.12);
+          --shadow-xl: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 8px 10px -1px hsl(28 13% 20% / 0.12);
+          --shadow-2xl: 2px 3px 5px 0px hsl(28 13% 20% / 0.30);
+          --tracking-normal: 0em;
+          --spacing: 0.25rem;
+}
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+            <script>
+            // tailwind.config (IMPORTANT FOR STYLES)
+            tailwind.config = {
+                        theme: {
+                            extend: {
+                                colors: {
+                                    "border": "var(--border)",
+                                    "input": "var(--input)",
+                                    "ring": "var(--ring)",
+                                    "background": "var(--background)",
+                                    "foreground": "var(--foreground)",
+                                    "primary": {
+                                        "DEFAULT": "var(--primary)",
+                                        "foreground": "var(--primary-foreground)",
+                                    },
+                                    "secondary": {
+                                        "DEFAULT": "var(--secondary)",
+                                        "foreground": "var(--secondary-foreground)",
+                                    },
+                                    "destructive": {
+                                        "DEFAULT": "var(--destructive)",
+                                        "foreground": "var(--destructive-foreground)",
+                                    },
+                                    "muted": {
+                                        "DEFAULT": "var(--muted)",
+                                        "foreground": "var(--muted-foreground)",
+                                    },
+                                    "accent": {
+                                        "DEFAULT": "var(--accent)",
+                                        "foreground": "var(--accent-foreground)",
+                                    },
+                                    "popover": {
+                                        "DEFAULT": "var(--popover)",
+                                        "foreground": "var(--popover-foreground)",
+                                    },
+                                    "card": {
+                                        "DEFAULT": "var(--card)",
+                                        "foreground": "var(--card-foreground)",
+                                    },
+                                    "sidebar": {
+                                        "DEFAULT": "var(--sidebar)",
+                                        "foreground": "var(--sidebar-foreground)",
+                                        "primary": "var(--sidebar-primary)",
+                                        "primary-foreground": "var(--sidebar-primary-foreground)",
+                                        "accent": "var(--sidebar-accent)",
+                                        "accent-foreground": "var(--sidebar-accent-foreground)",
+                                        "border": "var(--sidebar-border)",
+                                        "ring": "var(--sidebar-ring)",
+                                    },
+                                    "chart": {
+                                        "1": "var(--chart-1)",
+                                        "2": "var(--chart-2)",
+                                        "3": "var(--chart-3)",
+                                        "4": "var(--chart-4)",
+                                        "5": "var(--chart-5)",
+                                    },
+                                },
+                                "borderRadius": {
+                                    "lg": "var(--radius)",
+                                    "md": "calc(var(--radius) - 2px)",
+                                    "sm": "calc(var(--radius) - 4px)",
+                                },
+                                "fontFamily": {
+                                    "sans": ["var(--font-sans)"],
+                                    "serif": ["var(--font-serif)"],
+                                    "mono": ["var(--font-mono)"],
+                                },
+                                "boxShadow": {
+                                    "2xs": "var(--shadow-2xs)",
+                                    "xs": "var(--shadow-xs)",
+                                    "sm": "var(--shadow-sm)",
+                                    "DEFAULT": "var(--shadow)",
+                                    "md": "var(--shadow-md)",
+                                    "lg": "var(--shadow-lg)",
+                                    "xl": "var(--shadow-xl)",
+                                    "2xl": "var(--shadow-2xl)",
+                                },
+                            },
+                        }
+                    }
+            </script>
+            
+</head>
+<body class="min-h-screen flex flex-col overflow-x-hidden antialiased bg-background text-foreground" style="background-image: url('https://www.transparenttextures.com/patterns/parchment.png')">
+
+    <!-- Header (VERBATIM from previous screen, only active state changed) -->
+    <header id="main-header" class="w-full z-20 px-8 py-4 flex justify-between items-center bg-card/90 backdrop-blur-md border-b border-border sticky top-0 shadow-sm">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-[0_0_10px_rgba(166,124,82,0.4)] border border-border">
+                    <i class="fa-solid fa-scroll text-primary-foreground text-sm"></i>
+                </div>
+                <span class="font-bold text-xl tracking-wide font-sans text-foreground">Aetheria Markets</span>
+            </div>
+            
+            <nav class="hidden lg:flex items-center gap-6 font-sans">
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Dashboard</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Inventory</a>
+                <a href="#" class="text-foreground font-medium border-b-2 border-primary pb-1">Marketplace</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Production</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Ledger</a>
+            </nav>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3 glass-panel px-4 py-2 rounded-lg">
+                <i class="fa-solid fa-hourglass-half text-primary"></i>
+                <div class="flex flex-col">
+                    <span class="text-xs text-muted-foreground font-mono">TICK 142</span>
+                    <span class="text-sm font-bold text-foreground font-mono">08:45 REMAINING</span>
+                </div>
+                <div class="w-24 h-1.5 bg-muted rounded-full ml-2 overflow-hidden border border-border/50">
+                    <div class="h-full bg-primary w-[40%] rounded-full shadow-[0_0_5px_rgba(166,124,82,0.5)]"></div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button class="relative text-muted-foreground hover:text-foreground transition-colors">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full border-2 border-card"></span>
+                </button>
+                <div class="w-10 h-10 rounded-full bg-muted border border-border overflow-hidden shadow-sm">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Profile" class="w-full h-full object-cover">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 lg:p-6 w-full max-w-[1600px] mx-auto relative z-10 flex flex-col h-[calc(100vh-80px)]">
+        <!-- Background Effects -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div class="absolute top-[10%] left-[20%] w-[30%] h-[30%] rounded-full bg-primary/10 blur-[100px]"></div>
+            <div class="absolute bottom-[20%] right-[10%] w-[25%] h-[25%] rounded-full bg-accent/20 blur-[120px]"></div>
+        </div>
+
+        <!-- Breadcrumb & Resource Header -->
+        <div class="relative z-10 flex items-center justify-between mb-4">
+            <div class="flex items-center gap-4">
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 text-sm font-sans">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Exchange
+                </a>
+                <div class="h-4 w-[1px] bg-border"></div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-md bg-muted flex items-center justify-center text-chart-2 border border-border shadow-sm">
+                        <i class="fa-solid fa-cubes text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-foreground text-xl font-sans">Iron Ore <span class="text-xs text-muted-foreground font-mono ml-2">IRON-R</span></h1>
+                        <div class="text-xs text-muted-foreground font-serif">Tier 1 Raw Resource</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6 glass-panel px-6 py-2 rounded-lg">
+                <div>
+                    <div class="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">Last Price</div>
+                    <div class="text-lg font-mono font-bold text-foreground">42.50 <span class="text-xs text-[#2D4F1E] ml-1"><i class="fa-solid fa-arrow-up"></i> 10.3%</span></div>
+                </div>
+                <div class="h-8 w-[1px] bg-border"></div>
+                <div>
+                    <div class="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">24h High</div>
+                    <div class="text-sm font-mono text-foreground">44.20</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">24h Low</div>
+                    <div class="text-sm font-mono text-foreground">38.10</div>
+                </div>
+                <div class="h-8 w-[1px] bg-border"></div>
+                <div>
+                    <div class="text-[10px] text-muted-foreground uppercase tracking-wider font-sans">24h Vol</div>
+                    <div class="text-sm font-mono text-foreground">12,450</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Terminal Grid -->
+        <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow min-h-0">
+            
+            <!-- Left Column: Order Book & Trades (Col 3) -->
+            <div class="lg:col-span-3 flex flex-col gap-4 min-h-0">
+                <!-- Order Book -->
+                <div class="glass-panel rounded-2xl flex flex-col flex-grow min-h-0">
+                    <div class="p-3 border-b border-border flex justify-between items-center">
+                        <h2 class="text-sm font-bold text-foreground">Order Book</h2>
+                        <div class="flex gap-2">
+                            <button class="text-muted-foreground hover:text-foreground"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 px-3 py-2 text-[10px] text-muted-foreground uppercase tracking-wider border-b border-border/50">
+                        <div>Price</div>
+                        <div class="text-right">Amount</div>
+                        <div class="text-right">Total</div>
+                    </div>
+
+                    <!-- Asks (Sells) -->
+                    <div class="flex-grow overflow-y-auto flex flex-col-reverse p-1 space-y-reverse space-y-0.5">
+                        <div class="order-book-row text-accent">
+                            <div class="depth-bar-ask" style="width: 85%"></div>
+                            <div class="relative z-10">43.20</div>
+                            <div class="relative z-10 text-right text-muted-foreground">1,200</div>
+                            <div class="relative z-10 text-right text-foreground">5,450</div>
+                        </div>
+                        <div class="order-book-row text-accent">
+                            <div class="depth-bar-ask" style="width: 65%"></div>
+                            <div class="relative z-10">43.10</div>
+                            <div class="relative z-10 text-right text-muted-foreground">850</div>
+                            <div class="relative z-10 text-right text-foreground">4,250</div>
+                        </div>
+                        <div class="order-book-row text-accent">
+                            <div class="depth-bar-ask" style="width: 40%"></div>
+                            <div class="relative z-10">43.00</div>
+                            <div class="relative z-10 text-right text-muted-foreground">1,500</div>
+                            <div class="relative z-10 text-right text-foreground">3,400</div>
+                        </div>
+                        <div class="order-book-row text-accent">
+                            <div class="depth-bar-ask" style="width: 25%"></div>
+                            <div class="relative z-10">42.90</div>
+                            <div class="relative z-10 text-right text-muted-foreground">400</div>
+                            <div class="relative z-10 text-right text-foreground">1,900</div>
+                        </div>
+                        <div class="order-book-row text-accent">
+                            <div class="depth-bar-ask" style="width: 15%"></div>
+                            <div class="relative z-10">42.80</div>
+                            <div class="relative z-10 text-right text-muted-foreground">1,500</div>
+                            <div class="relative z-10 text-right text-foreground">1,500</div>
+                        </div>
+                    </div>
+
+                    <!-- Spread -->
+                    <div class="py-2 px-3 border-y border-border/50 flex justify-between items-center bg-muted/30">
+                        <div class="text-sm font-mono font-bold text-foreground">42.50 <span class="text-[10px] text-[#2D4F1E] ml-1"><i class="fa-solid fa-arrow-up"></i></span></div>
+                        <div class="text-xs text-muted-foreground font-mono">Spread: 0.70</div>
+                    </div>
+
+                    <!-- Bids (Buys) -->
+                    <div class="flex-grow overflow-y-auto p-1 space-y-0.5">
+                        <div class="order-book-row text-green-400">
+                            <div class="depth-bar-bid" style="width: 20%"></div>
+                            <div class="relative z-10">42.10</div>
+                            <div class="relative z-10 text-right text-muted-foreground">800</div>
+                            <div class="relative z-10 text-right text-foreground">800</div>
+                        </div>
+                        <div class="order-book-row text-green-400">
+                            <div class="depth-bar-bid" style="width: 35%"></div>
+                            <div class="relative z-10">42.00</div>
+                            <div class="relative z-10 text-right text-muted-foreground">2,100</div>
+                            <div class="relative z-10 text-right text-foreground">2,900</div>
+                        </div>
+                        <div class="order-book-row text-green-400">
+                            <div class="depth-bar-bid" style="width: 45%"></div>
+                            <div class="relative z-10">41.80</div>
+                            <div class="relative z-10 text-right text-muted-foreground">500</div>
+                            <div class="relative z-10 text-right text-foreground">3,400</div>
+                        </div>
+                        <div class="order-book-row text-green-400">
+                            <div class="depth-bar-bid" style="width: 60%"></div>
+                            <div class="relative z-10">41.50</div>
+                            <div class="relative z-10 text-right text-muted-foreground">1,200</div>
+                            <div class="relative z-10 text-right text-foreground">4,600</div>
+                        </div>
+                        <div class="order-book-row text-green-400">
+                            <div class="depth-bar-bid" style="width: 80%"></div>
+                            <div class="relative z-10">41.00</div>
+                            <div class="relative z-10 text-right text-muted-foreground">3,000</div>
+                            <div class="relative z-10 text-right text-foreground">7,600</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Trades Tape -->
+                <div class="glass-panel rounded-2xl flex flex-col h-1/3 min-h-[150px]">
+                    <div class="p-3 border-b border-border">
+                        <h2 class="text-sm font-bold text-foreground">Recent Trades</h2>
+                    </div>
+                    <div class="grid grid-cols-3 px-3 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider">
+                        <div>Price</div>
+                        <div class="text-right">Amount</div>
+                        <div class="text-right">Time</div>
+                    </div>
+                    <div class="flex-grow overflow-y-auto p-1">
+                        <div class="grid grid-cols-3 px-2 py-1 text-xs font-mono hover:bg-muted/50">
+                            <div class="text-green-400">42.50</div>
+                            <div class="text-right text-muted-foreground">150</div>
+                            <div class="text-right text-muted-foreground">14:22:05</div>
+                        </div>
+                        <div class="grid grid-cols-3 px-2 py-1 text-xs font-mono hover:bg-muted/50">
+                            <div class="text-accent">42.40</div>
+                            <div class="text-right text-muted-foreground">500</div>
+                            <div class="text-right text-muted-foreground">14:21:42</div>
+                        </div>
+                        <div class="grid grid-cols-3 px-2 py-1 text-xs font-mono hover:bg-muted/50">
+                            <div class="text-green-400">42.40</div>
+                            <div class="text-right text-muted-foreground">50</div>
+                            <div class="text-right text-muted-foreground">14:21:10</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Column: Chart (Col 6) -->
+            <div class="lg:col-span-6 glass-panel rounded-2xl flex flex-col min-h-0 relative overflow-hidden">
+                <div class="p-3 border-b border-border flex justify-between items-center bg-muted/50">
+                    <div class="flex gap-2">
+                        <button class="px-2 py-1 rounded text-xs font-medium bg-muted text-foreground">Tick</button>
+                        <button class="px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted">1m</button>
+                        <button class="px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted">5m</button>
+                        <button class="px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted">1h</button>
+                    </div>
+                    <div class="flex gap-3">
+                        <button class="text-muted-foreground hover:text-foreground text-sm"><i class="fa-solid fa-chart-line"></i></button>
+                        <button class="text-muted-foreground hover:text-foreground text-sm"><i class="fa-solid fa-gear"></i></button>
+                    </div>
+                </div>
+                <div id="main-price-chart" class="flex-grow w-full h-full"></div>
+            </div>
+
+            <!-- Right Column: Order Ticket & Inventory (Col 3) -->
+            <div class="lg:col-span-3 flex flex-col gap-4 min-h-0">
+                
+                <!-- Order Ticket -->
+                <div class="glass-panel rounded-2xl p-4 flex flex-col">
+                    <div class="flex gap-2 mb-4 p-1 bg-muted rounded-lg">
+                        <button class="flex-1 py-1.5 rounded-md bg-green-500/20 text-green-400 text-sm font-bold border border-green-500/30">Buy</button>
+                        <button class="flex-1 py-1.5 rounded-md text-muted-foreground hover:text-foreground text-sm font-medium transition-colors">Sell</button>
+                    </div>
+                    
+                    <div class="flex gap-4 mb-4 border-b border-border pb-2">
+                        <button class="text-sm font-medium text-primary border-b-2 border-primary pb-2 -mb-[9px]">Limit</button>
+                        <button class="text-sm font-medium text-muted-foreground hover:text-foreground pb-2 -mb-[9px]">Market</button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-xs text-muted-foreground mb-1">
+                                <span>Price</span>
+                                <span>Best Ask: <span class="text-foreground font-mono">42.80</span></span>
+                            </div>
+                            <div class="relative">
+                                <input type="text" value="42.50" class="w-full bg-muted border border-border rounded-lg px-3 py-2 text-foreground font-mono focus:outline-none focus:border-primary transition-colors text-right pr-12">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">GOLD</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs text-muted-foreground mb-1">
+                                <span>Amount</span>
+                                <span>Max: <span class="text-foreground font-mono">576</span></span>
+                            </div>
+                            <div class="relative">
+                                <input type="text" placeholder="0" class="w-full bg-muted border border-border rounded-lg px-3 py-2 text-foreground font-mono focus:outline-none focus:border-primary transition-colors text-right pr-12">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">IRON</span>
+                            </div>
+                        </div>
+
+                        <!-- Slider -->
+                        <div class="px-2">
+                            <div class="w-full h-1 bg-muted rounded-full relative">
+                                <div class="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-primary rounded-full border-2 border-white shadow-neon cursor-pointer z-10"></div>
+                                <div class="absolute left-[25%] top-1/2 -translate-y-1/2 w-2 h-2 bg-border rounded-full"></div>
+                                <div class="absolute left-[50%] top-1/2 -translate-y-1/2 w-2 h-2 bg-border rounded-full"></div>
+                                <div class="absolute left-[75%] top-1/2 -translate-y-1/2 w-2 h-2 bg-border rounded-full"></div>
+                                <div class="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-border rounded-full"></div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-border/50 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-muted-foreground">Est. Fee (0.1%)</span>
+                                <span class="text-foreground font-mono">--</span>
+                            </div>
+                            <div class="flex justify-between text-sm font-bold">
+                                <span class="text-muted-foreground">Total</span>
+                                <span class="text-foreground font-mono">0.00 <span class="text-xs text-muted-foreground font-sans font-normal">GOLD</span></span>
+                            </div>
+                        </div>
+
+                        <button class="w-full py-3 rounded-lg bg-green-500 hover:bg-green-400 text-foreground font-bold text-sm transition-colors shadow-[0_0_15px_rgba(74,222,128,0.3)]">
+                            Place Buy Order
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Wallet / Inventory Status -->
+                <div class="glass-panel rounded-2xl p-4 flex-grow flex flex-col">
+                    <h2 class="text-sm font-bold text-foreground mb-3 border-b border-border pb-2">Available Assets</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-2 rounded-lg bg-muted/50 border border-border">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-coins text-yellow-500"></i>
+                                <span class="text-sm text-muted-foreground">Gold</span>
+                            </div>
+                            <span class="text-sm font-mono font-bold text-foreground">24,500.00</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded-lg bg-muted/50 border border-border">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-cubes text-accent"></i>
+                                <span class="text-sm text-muted-foreground">Iron Ore</span>
+                            </div>
+                            <span class="text-sm font-mono font-bold text-foreground">1,250</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function initializeCharts() {
+            try {
+                // Main Price Chart
+                const trace1 = {
+                    x: ['T130', 'T131', 'T132', 'T133', 'T134', 'T135', 'T136', 'T137', 'T138', 'T139', 'T140', 'T141', 'T142'],
+                    y: [38.5, 39.2, 38.8, 39.5, 40.1, 39.8, 40.5, 41.2, 41.0, 41.8, 42.1, 42.3, 42.5],
+                    type: 'scatter',
+                    mode: 'lines',
+                    fill: 'tozeroy',
+                    fillcolor: 'rgba(74, 222, 128, 0.1)',
+                    line: {
+                        color: '#4ADE80',
+                        width: 2,
+                        shape: 'spline',
+                        smoothing: 1.3
+                    },
+                    name: 'Price'
+                };
+
+                const layout = {
+                    margin: { t: 20, r: 40, b: 40, l: 40 },
+                    plot_bgcolor: 'transparent',
+                    paper_bgcolor: 'transparent',
+                    xaxis: {
+                        showgrid: true,
+                        gridcolor: 'rgba(74, 63, 53, 0.3)',
+                        tickcolor: 'rgba(74, 63, 53, 0.5)',
+                        tickfont: { color: '#9CA3AF', size: 10, family: 'IBM Plex Mono' }
+                    },
+                    yaxis: {
+                        showgrid: true,
+                        gridcolor: 'rgba(74, 63, 53, 0.3)',
+                        tickcolor: 'rgba(74, 63, 53, 0.5)',
+                        tickfont: { color: '#9CA3AF', size: 10, family: 'IBM Plex Mono' },
+                        side: 'right'
+                    },
+                    showlegend: false,
+                    hovermode: 'x unified'
+                };
+
+                const config = {
+                    responsive: true,
+                    displayModeBar: false
+                };
+
+                Plotly.newPlot('main-price-chart', [trace1], layout, config);
+
+            } catch(e) {
+                console.error('Chart initialization failed:', e);
+            }
+        }
+
+        window.addEventListener('load', initializeCharts);
+        setTimeout(initializeCharts, 1200);
+    </script>
+</body>
+</html>

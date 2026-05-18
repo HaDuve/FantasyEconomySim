@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>window.FontAwesomeConfig = { autoReplaceSvg: "nest"};</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Trader - Historical Ledger</title>
+    
+
+    <style>
+        
+
+        body { margin: 0; padding: 0; font-family: var(--font-serif); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--background); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        
+        .glass-panel {
+            background: rgba(255, 252, 245, 0.85); /* --card with opacity */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(74, 63, 53, 0.1), 0 2px 4px -1px rgba(74, 63, 53, 0.06);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-sans);
+        }
+    </style>
+<style>
+:root {
+          --background: #f5f1e6;
+          --foreground: #4a3f35;
+          --card: #fffcf5;
+          --card-foreground: #4a3f35;
+          --popover: #fffcf5;
+          --popover-foreground: #4a3f35;
+          --primary: #a67c52;
+          --primary-foreground: #ffffff;
+          --secondary: #e2d8c3;
+          --secondary-foreground: #5c4d3f;
+          --muted: #ece5d8;
+          --muted-foreground: #7d6b56;
+          --accent: #d4c8aa;
+          --accent-foreground: #4a3f35;
+          --destructive: #b54a35;
+          --destructive-foreground: #ffffff;
+          --border: #dbd0ba;
+          --input: #dbd0ba;
+          --ring: #a67c52;
+          --chart-1: #a67c52;
+          --chart-2: #8d6e4c;
+          --chart-3: #735a3a;
+          --chart-4: #b3906f;
+          --chart-5: #c0a080;
+          --sidebar: #ece5d8;
+          --sidebar-foreground: #4a3f35;
+          --sidebar-primary: #a67c52;
+          --sidebar-primary-foreground: #ffffff;
+          --sidebar-accent: #d4c8aa;
+          --sidebar-accent-foreground: #4a3f35;
+          --sidebar-border: #dbd0ba;
+          --sidebar-ring: #a67c52;
+          --font-sans: Libre Baskerville, serif;
+          --font-serif: Lora, serif;
+          --font-mono: IBM Plex Mono, monospace;
+          --radius: 0.25rem;
+          --shadow-x: 2px;
+          --shadow-y: 3px;
+          --shadow-blur: 5px;
+          --shadow-spread: 0px;
+          --shadow-opacity: 0.12;
+          --shadow-color: hsl(28 13% 20%);
+          --shadow-2xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
+          --shadow-xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
+          --shadow-sm: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
+          --shadow: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
+          --shadow-md: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 2px 4px -1px hsl(28 13% 20% / 0.12);
+          --shadow-lg: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 4px 6px -1px hsl(28 13% 20% / 0.12);
+          --shadow-xl: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 8px 10px -1px hsl(28 13% 20% / 0.12);
+          --shadow-2xl: 2px 3px 5px 0px hsl(28 13% 20% / 0.30);
+          --tracking-normal: 0em;
+          --spacing: 0.25rem;
+}
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+            <script>
+            // tailwind.config (IMPORTANT FOR STYLES)
+            tailwind.config = {
+                        theme: {
+                            extend: {
+                                colors: {
+                                    "border": "var(--border)",
+                                    "input": "var(--input)",
+                                    "ring": "var(--ring)",
+                                    "background": "var(--background)",
+                                    "foreground": "var(--foreground)",
+                                    "primary": {
+                                        "DEFAULT": "var(--primary)",
+                                        "foreground": "var(--primary-foreground)",
+                                    },
+                                    "secondary": {
+                                        "DEFAULT": "var(--secondary)",
+                                        "foreground": "var(--secondary-foreground)",
+                                    },
+                                    "destructive": {
+                                        "DEFAULT": "var(--destructive)",
+                                        "foreground": "var(--destructive-foreground)",
+                                    },
+                                    "muted": {
+                                        "DEFAULT": "var(--muted)",
+                                        "foreground": "var(--muted-foreground)",
+                                    },
+                                    "accent": {
+                                        "DEFAULT": "var(--accent)",
+                                        "foreground": "var(--accent-foreground)",
+                                    },
+                                    "popover": {
+                                        "DEFAULT": "var(--popover)",
+                                        "foreground": "var(--popover-foreground)",
+                                    },
+                                    "card": {
+                                        "DEFAULT": "var(--card)",
+                                        "foreground": "var(--card-foreground)",
+                                    },
+                                    "sidebar": {
+                                        "DEFAULT": "var(--sidebar)",
+                                        "foreground": "var(--sidebar-foreground)",
+                                        "primary": "var(--sidebar-primary)",
+                                        "primary-foreground": "var(--sidebar-primary-foreground)",
+                                        "accent": "var(--sidebar-accent)",
+                                        "accent-foreground": "var(--sidebar-accent-foreground)",
+                                        "border": "var(--sidebar-border)",
+                                        "ring": "var(--sidebar-ring)",
+                                    },
+                                    "chart": {
+                                        "1": "var(--chart-1)",
+                                        "2": "var(--chart-2)",
+                                        "3": "var(--chart-3)",
+                                        "4": "var(--chart-4)",
+                                        "5": "var(--chart-5)",
+                                    },
+                                },
+                                "borderRadius": {
+                                    "lg": "var(--radius)",
+                                    "md": "calc(var(--radius) - 2px)",
+                                    "sm": "calc(var(--radius) - 4px)",
+                                },
+                                "fontFamily": {
+                                    "sans": ["var(--font-sans)"],
+                                    "serif": ["var(--font-serif)"],
+                                    "mono": ["var(--font-mono)"],
+                                },
+                                "boxShadow": {
+                                    "2xs": "var(--shadow-2xs)",
+                                    "xs": "var(--shadow-xs)",
+                                    "sm": "var(--shadow-sm)",
+                                    "DEFAULT": "var(--shadow)",
+                                    "md": "var(--shadow-md)",
+                                    "lg": "var(--shadow-lg)",
+                                    "xl": "var(--shadow-xl)",
+                                    "2xl": "var(--shadow-2xl)",
+                                },
+                            },
+                        }
+                    }
+            </script>
+            
+</head>
+<body class="min-h-screen flex flex-col overflow-x-hidden antialiased bg-background text-foreground" style="background-image: url('https://www.transparenttextures.com/patterns/parchment.png')">
+
+    <!-- Header (VERBATIM from previous screen, only active state changed) -->
+    <header id="main-header" class="w-full z-20 px-8 py-4 flex justify-between items-center bg-card/90 backdrop-blur-md border-b border-border sticky top-0 shadow-sm">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-[0_0_10px_rgba(166,124,82,0.4)] border border-border">
+                    <i class="fa-solid fa-scroll text-primary-foreground text-sm"></i>
+                </div>
+                <span class="font-bold text-xl tracking-wide font-sans text-foreground">Aetheria Markets</span>
+            </div>
+            
+            <nav class="hidden lg:flex items-center gap-6 font-serif">
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Dashboard</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Inventory</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Marketplace</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Production</a>
+                <a href="#" class="text-foreground font-medium border-b-2 border-primary pb-1">Ledger</a>
+            </nav>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3 glass-panel px-4 py-2 rounded-lg border-primary/30 shadow-[0_0_10px_rgba(166,124,82,0.2)]">
+                <i class="fa-solid fa-hourglass-half text-primary"></i>
+                <div class="flex flex-col">
+                    <span class="text-xs text-muted-foreground font-mono">TICK 142</span>
+                    <span class="text-sm font-bold text-foreground font-mono">08:45 REMAINING</span>
+                </div>
+                <div class="w-24 h-1.5 bg-muted rounded-full ml-2 overflow-hidden border border-border">
+                    <div class="h-full bg-primary w-[40%] rounded-full shadow-[0_0_5px_rgba(166,124,82,0.5)]"></div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button class="relative text-muted-foreground hover:text-foreground transition-colors">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full border border-card"></span>
+                </button>
+                <div class="w-10 h-10 rounded-full bg-muted border border-border overflow-hidden shadow-sm">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Profile" class="w-full h-full object-cover">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 lg:p-6 w-full max-w-[1600px] mx-auto relative z-10 flex flex-col min-h-[calc(100vh-80px)]">
+        <!-- Background Effects -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div class="absolute top-[10%] left-[20%] w-[30%] h-[30%] rounded-full bg-primary/10 blur-[100px]"></div>
+            <div class="absolute bottom-[20%] right-[10%] w-[25%] h-[25%] rounded-full bg-accent/20 blur-[120px]"></div>
+        </div>
+
+        <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+            
+            <!-- Left Column: Ledger Table (Col 8) -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                
+                <!-- Controls & Search -->
+                <div class="glass-panel rounded-lg p-5 border-primary/30 shadow-[0_0_15px_rgba(166,124,82,0.1)] flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <div class="relative w-full sm:w-64">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"></i>
+                            <input type="text" placeholder="Search events, resources..." class="w-full bg-muted border border-border rounded-md py-2 pl-9 pr-4 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors font-serif">
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                        <select class="bg-muted border border-border rounded-md py-2 px-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors appearance-none font-serif">
+                            <option>All Event Types</option>
+                            <option>Trades Executed</option>
+                            <option>Orders Placed</option>
+                            <option>Production</option>
+                            <option>Inventory Move</option>
+                        </select>
+                        <select class="bg-muted border border-border rounded-md py-2 px-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors appearance-none font-serif">
+                            <option>Last 50 Ticks</option>
+                            <option>Last 100 Ticks</option>
+                            <option>All Time</option>
+                        </select>
+                        <button class="bg-card border border-border hover:bg-muted text-foreground px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-scroll"></i> Export Ledger
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ledger Table -->
+                <div class="glass-panel rounded-lg flex flex-col flex-grow overflow-hidden border-border">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-border bg-muted/50">
+                                    <th class="py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider font-sans">Tick</th>
+                                    <th class="py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider font-sans">Event Type</th>
+                                    <th class="py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider font-sans">Resource</th>
+                                    <th class="py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right font-sans">Amount</th>
+                                    <th class="py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right font-sans">Price/Fee</th>
+                                    <th class="py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right font-sans">P&L</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <!-- Row 1 -->
+                                <tr class="hover:bg-muted/30 transition-colors">
+                                    <td class="py-4 px-6 font-mono text-sm text-foreground">141</td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-md bg-[#2D4F1E]/10 flex items-center justify-center border border-[#2D4F1E]/20">
+                                                <i class="fa-solid fa-handshake text-[#2D4F1E] text-[10px]"></i>
+                                            </span>
+                                            <span class="text-sm font-medium text-foreground">Trade Executed</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid fa-cube text-muted-foreground text-xs"></i>
+                                            <span class="text-sm text-foreground">Iron Bar</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-destructive">-50</td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-foreground">12.50 g</td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-[#2D4F1E]">+625.00 g</td>
+                                </tr>
+                                <!-- Row 2 -->
+                                <tr class="hover:bg-muted/30 transition-colors">
+                                    <td class="py-4 px-6 font-mono text-sm text-foreground">141</td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center border border-primary/20">
+                                                <i class="fa-solid fa-hammer text-primary text-[10px]"></i>
+                                            </span>
+                                            <span class="text-sm font-medium text-foreground">Production</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid fa-cube text-muted-foreground text-xs"></i>
+                                            <span class="text-sm text-foreground">Iron Bar</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-[#2D4F1E]">+10</td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-destructive">-2.00 g</td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-muted-foreground">--</td>
+                                </tr>
+                                <!-- Row 3 -->
+                                <tr class="hover:bg-muted/30 transition-colors">
+                                    <td class="py-4 px-6 font-mono text-sm text-foreground">140</td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-md bg-chart-4/10 flex items-center justify-center border border-chart-4/20">
+                                                <i class="fa-solid fa-file-invoice text-chart-4 text-[10px]"></i>
+                                            </span>
+                                            <span class="text-sm font-medium text-foreground">Order Placed</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid fa-cubes text-muted-foreground text-xs"></i>
+                                            <span class="text-sm text-foreground">Iron Ore</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-[#2D4F1E]">+200</td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-foreground">4.20 g</td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-destructive">-840.00 g</td>
+                                </tr>
+                                <!-- Row 4 -->
+                                <tr class="hover:bg-muted/30 transition-colors">
+                                    <td class="py-4 px-6 font-mono text-sm text-foreground">139</td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-md bg-muted-foreground/10 flex items-center justify-center border border-muted-foreground/20">
+                                                <i class="fa-solid fa-boxes-stacked text-muted-foreground text-[10px]"></i>
+                                            </span>
+                                            <span class="text-sm font-medium text-foreground">Inventory Move</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid fa-gem text-muted-foreground text-xs"></i>
+                                            <span class="text-sm text-foreground">Raw Coal</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-foreground">50</td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-muted-foreground">--</td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-muted-foreground">--</td>
+                                </tr>
+                                <!-- Row 5 -->
+                                <tr class="hover:bg-muted/30 transition-colors">
+                                    <td class="py-4 px-6 font-mono text-sm text-foreground">138</td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-md bg-destructive/10 flex items-center justify-center border border-destructive/20">
+                                                <i class="fa-solid fa-ban text-destructive text-[10px]"></i>
+                                            </span>
+                                            <span class="text-sm font-medium text-foreground">Order Canceled</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid fa-leaf text-muted-foreground text-xs"></i>
+                                            <span class="text-sm text-foreground">Herbs</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-foreground">100</td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-muted-foreground">--</td>
+                                    <td class="py-4 px-6 text-right font-mono text-sm text-[#2D4F1E]">+1.50 g <span class="text-[10px] text-muted-foreground">(Fee Refund)</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-4 border-t border-border flex justify-between items-center bg-muted/30">
+                        <span class="text-xs text-muted-foreground font-sans">Showing 1-5 of 1,248 entries</span>
+                        <div class="flex gap-2">
+                            <button class="px-3 py-1 bg-card border border-border rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors font-sans">Prev</button>
+                            <button class="px-3 py-1 bg-card border border-border rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors font-sans">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Summary Panel (Col 4) -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                
+                <!-- Per-Tick Summary -->
+                <div class="glass-panel rounded-lg p-6 border-t-4 border-t-primary shadow-[0_0_20px_rgba(166,124,82,0.1)] flex flex-col h-full">
+                    <h2 class="text-xl font-bold text-foreground mb-6 flex items-center gap-2 font-sans">
+                        <i class="fa-solid fa-book-open text-primary"></i>
+                        Tick Summary
+                    </h2>
+
+                    <div class="bg-muted rounded-md p-5 border border-border mb-6 relative overflow-hidden shadow-sm">
+                        <div class="absolute right-0 top-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px]"></div>
+                        <p class="text-sm text-muted-foreground mb-1 font-sans">Realized P&L (Last 50 Ticks)</p>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-bold font-mono text-[#2D4F1E]">+1,420.50</span>
+                            <span class="text-sm text-muted-foreground font-mono">g</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 mb-6 flex-grow">
+                        <h3 class="text-sm font-bold text-foreground border-b border-border pb-2 font-sans">Net Resource Changes</h3>
+                        
+                        <div class="flex justify-between items-center p-3 bg-card rounded-md border border-border shadow-sm">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-cube text-primary text-xs"></i>
+                                <span class="text-sm text-foreground">Iron Bar</span>
+                            </div>
+                            <span class="font-mono text-sm text-[#2D4F1E]">+45</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-3 bg-card rounded-md border border-border shadow-sm">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-cubes text-muted-foreground text-xs"></i>
+                                <span class="text-sm text-foreground">Iron Ore</span>
+                            </div>
+                            <span class="font-mono text-sm text-destructive">-120</span>
+                        </div>
+
+                        <div class="flex justify-between items-center p-3 bg-card rounded-md border border-border shadow-sm">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-gem text-muted-foreground text-xs"></i>
+                                <span class="text-sm text-foreground">Raw Coal</span>
+                            </div>
+                            <span class="font-mono text-sm text-destructive">-30</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-card/50 rounded-md p-4 border border-border shadow-sm">
+                        <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 font-sans">Total Fees Paid</h3>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-foreground">Marketplace Fees</span>
+                            <span class="font-mono text-sm text-destructive">45.20 g</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-sm text-foreground">Production Costs</span>
+                            <span class="font-mono text-sm text-destructive">12.00 g</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

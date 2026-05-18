@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Trader - Inventory & Storage</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.plot.ly/plotly-3.1.1.min.js"></script>
+
+    <style>
+        
+
+        body { margin: 0; padding: 0; font-family: var(--font-serif); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--background); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        
+        .glass-panel {
+            background: rgba(255, 252, 245, 0.85); /* --card with opacity */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(74, 63, 53, 0.1), 0 2px 4px -1px rgba(74, 63, 53, 0.06);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-sans);
+        }
+    </style>
+<style>
+:root {
+          --background: #f5f1e6;
+          --foreground: #4a3f35;
+          --card: #fffcf5;
+          --card-foreground: #4a3f35;
+          --popover: #fffcf5;
+          --popover-foreground: #4a3f35;
+          --primary: #a67c52;
+          --primary-foreground: #ffffff;
+          --secondary: #e2d8c3;
+          --secondary-foreground: #5c4d3f;
+          --muted: #ece5d8;
+          --muted-foreground: #7d6b56;
+          --accent: #d4c8aa;
+          --accent-foreground: #4a3f35;
+          --destructive: #b54a35;
+          --destructive-foreground: #ffffff;
+          --border: #dbd0ba;
+          --input: #dbd0ba;
+          --ring: #a67c52;
+          --chart-1: #a67c52;
+          --chart-2: #8d6e4c;
+          --chart-3: #735a3a;
+          --chart-4: #b3906f;
+          --chart-5: #c0a080;
+          --sidebar: #ece5d8;
+          --sidebar-foreground: #4a3f35;
+          --sidebar-primary: #a67c52;
+          --sidebar-primary-foreground: #ffffff;
+          --sidebar-accent: #d4c8aa;
+          --sidebar-accent-foreground: #4a3f35;
+          --sidebar-border: #dbd0ba;
+          --sidebar-ring: #a67c52;
+          --font-sans: Libre Baskerville, serif;
+          --font-serif: Lora, serif;
+          --font-mono: IBM Plex Mono, monospace;
+          --radius: 0.25rem;
+          --shadow-x: 2px;
+          --shadow-y: 3px;
+          --shadow-blur: 5px;
+          --shadow-spread: 0px;
+          --shadow-opacity: 0.12;
+          --shadow-color: hsl(28 13% 20%);
+          --shadow-2xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
+          --shadow-xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
+          --shadow-sm: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
+          --shadow: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
+          --shadow-md: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 2px 4px -1px hsl(28 13% 20% / 0.12);
+          --shadow-lg: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 4px 6px -1px hsl(28 13% 20% / 0.12);
+          --shadow-xl: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 8px 10px -1px hsl(28 13% 20% / 0.12);
+          --shadow-2xl: 2px 3px 5px 0px hsl(28 13% 20% / 0.30);
+          --tracking-normal: 0em;
+          --spacing: 0.25rem;
+}
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+            <script>
+            // tailwind.config (IMPORTANT FOR STYLES)
+            tailwind.config = {
+                        theme: {
+                            extend: {
+                                colors: {
+                                    "border": "var(--border)",
+                                    "input": "var(--input)",
+                                    "ring": "var(--ring)",
+                                    "background": "var(--background)",
+                                    "foreground": "var(--foreground)",
+                                    "primary": {
+                                        "DEFAULT": "var(--primary)",
+                                        "foreground": "var(--primary-foreground)",
+                                    },
+                                    "secondary": {
+                                        "DEFAULT": "var(--secondary)",
+                                        "foreground": "var(--secondary-foreground)",
+                                    },
+                                    "destructive": {
+                                        "DEFAULT": "var(--destructive)",
+                                        "foreground": "var(--destructive-foreground)",
+                                    },
+                                    "muted": {
+                                        "DEFAULT": "var(--muted)",
+                                        "foreground": "var(--muted-foreground)",
+                                    },
+                                    "accent": {
+                                        "DEFAULT": "var(--accent)",
+                                        "foreground": "var(--accent-foreground)",
+                                    },
+                                    "popover": {
+                                        "DEFAULT": "var(--popover)",
+                                        "foreground": "var(--popover-foreground)",
+                                    },
+                                    "card": {
+                                        "DEFAULT": "var(--card)",
+                                        "foreground": "var(--card-foreground)",
+                                    },
+                                    "sidebar": {
+                                        "DEFAULT": "var(--sidebar)",
+                                        "foreground": "var(--sidebar-foreground)",
+                                        "primary": "var(--sidebar-primary)",
+                                        "primary-foreground": "var(--sidebar-primary-foreground)",
+                                        "accent": "var(--sidebar-accent)",
+                                        "accent-foreground": "var(--sidebar-accent-foreground)",
+                                        "border": "var(--sidebar-border)",
+                                        "ring": "var(--sidebar-ring)",
+                                    },
+                                    "chart": {
+                                        "1": "var(--chart-1)",
+                                        "2": "var(--chart-2)",
+                                        "3": "var(--chart-3)",
+                                        "4": "var(--chart-4)",
+                                        "5": "var(--chart-5)",
+                                    },
+                                },
+                                "borderRadius": {
+                                    "lg": "var(--radius)",
+                                    "md": "calc(var(--radius) - 2px)",
+                                    "sm": "calc(var(--radius) - 4px)",
+                                },
+                                "fontFamily": {
+                                    "sans": ["var(--font-sans)"],
+                                    "serif": ["var(--font-serif)"],
+                                    "mono": ["var(--font-mono)"],
+                                },
+                                "boxShadow": {
+                                    "2xs": "var(--shadow-2xs)",
+                                    "xs": "var(--shadow-xs)",
+                                    "sm": "var(--shadow-sm)",
+                                    "DEFAULT": "var(--shadow)",
+                                    "md": "var(--shadow-md)",
+                                    "lg": "var(--shadow-lg)",
+                                    "xl": "var(--shadow-xl)",
+                                    "2xl": "var(--shadow-2xl)",
+                                },
+                            },
+                        }
+                    }
+            </script>
+            
+</head>
+<body class="min-h-screen flex flex-col overflow-x-hidden antialiased bg-background text-foreground" style="background-image: url('https://www.transparenttextures.com/patterns/parchment.png')">
+
+    <!-- Header -->
+    <header id="main-header" class="w-full z-20 px-8 py-4 flex justify-between items-center bg-card/80 backdrop-blur-md border-b border-border sticky top-0 shadow-sm">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-[0_0_10px_rgba(166,124,82,0.4)] border border-border">
+                    <i class="fa-solid fa-scroll text-primary-foreground text-sm"></i>
+                </div>
+                <span class="font-bold text-xl tracking-wide font-sans text-foreground">Aetheria Markets</span>
+            </div>
+            
+            <nav class="hidden lg:flex items-center gap-6">
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1 font-medium">Dashboard</a>
+                <a href="#" class="text-foreground font-bold border-b-2 border-primary pb-1">Inventory</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1 font-medium">Marketplace</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1 font-medium">Production</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1 font-medium">Ledger</a>
+            </nav>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3 glass-panel px-4 py-2 rounded-lg border-primary/30 shadow-[0_0_10px_rgba(166,124,82,0.2)]">
+                <i class="fa-solid fa-hourglass-half text-primary"></i>
+                <div class="flex flex-col">
+                    <span class="text-xs text-muted-foreground font-mono">TICK 142</span>
+                    <span class="text-sm font-bold text-foreground font-mono">08:45 REMAINING</span>
+                </div>
+                <div class="w-24 h-1.5 bg-muted rounded-full ml-2 overflow-hidden border border-border">
+                    <div class="h-full bg-primary w-[40%] rounded-full shadow-[0_0_5px_rgba(166,124,82,0.5)]"></div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button class="relative text-muted-foreground hover:text-foreground transition-colors">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full border border-card"></span>
+                </button>
+                <div class="w-10 h-10 rounded-full bg-muted border border-border overflow-hidden shadow-sm">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Profile" class="w-full h-full object-cover">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-8 w-full max-w-[1600px] mx-auto relative z-10">
+        <!-- Background Effects -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div class="absolute top-[10%] left-[20%] w-[30%] h-[30%] rounded-full bg-primary/5 blur-[100px]"></div>
+            <div class="absolute bottom-[20%] right-[10%] w-[40%] h-[40%] rounded-full bg-accent/10 blur-[120px]"></div>
+        </div>
+
+        <div class="relative z-10 flex flex-col gap-6">
+            
+            <!-- Top Section: Storage Capacity & Locations -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Capacity Overview -->
+                <div id="capacity-panel" class="lg:col-span-8 glass-panel rounded-lg p-6 flex flex-col justify-between">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 class="text-muted-foreground text-sm font-medium mb-1 font-sans uppercase tracking-wider">Global Storage Utilization</h2>
+                            <div class="text-4xl font-bold font-mono text-foreground mb-2">14,850 <span class="text-lg text-muted-foreground">/ 16,000 WGT</span></div>
+                            <div class="inline-flex items-center gap-1 text-destructive text-sm bg-destructive/10 px-2 py-0.5 rounded border border-destructive/30 font-medium">
+                                <i class="fa-solid fa-triangle-exclamation text-xs"></i> 92.8% Full (Nearing Limit)
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button class="bg-card border border-border rounded-md px-4 py-2 text-sm font-medium hover:border-primary text-foreground transition-colors flex items-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-plus text-primary"></i> Expand Storage
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full mt-4">
+                        <div class="flex justify-between text-xs font-mono text-muted-foreground mb-2">
+                            <span>0</span>
+                            <span>8,000</span>
+                            <span>16,000</span>
+                        </div>
+                        <div class="w-full h-4 bg-muted rounded-full overflow-hidden border border-border relative shadow-inner">
+                            <!-- Pulsing warning background when near full -->
+                            <div class="absolute inset-0 bg-destructive/10 animate-pulse"></div>
+                            <div class="h-full bg-gradient-to-r from-chart-2 via-primary to-destructive w-[92.8%] rounded-full shadow-[0_0_10px_rgba(181,74,53,0.4)] relative z-10 transition-all duration-1000"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage Locations -->
+                <div id="locations-panel" class="lg:col-span-4 glass-panel rounded-lg p-6">
+                    <h2 class="text-lg font-bold text-foreground mb-4 font-sans border-b border-border pb-2">Storage Locations</h2>
+                    <div class="space-y-3">
+                        <div class="bg-card border border-primary/50 rounded-md p-4 flex items-center justify-between cursor-pointer shadow-[inset_0_0_15px_rgba(166,124,82,0.05),0_2px_4px_rgba(74,63,53,0.05)]">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center text-primary border border-primary/30 shadow-sm">
+                                    <i class="fa-solid fa-warehouse"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-foreground text-sm font-sans">Primary Vault</div>
+                                    <div class="text-xs text-muted-foreground">Capital City</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-mono font-bold text-foreground text-sm">12.5k / 12k</div>
+                                <div class="text-xs text-destructive font-medium">104% (Penalty)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-muted/50 border border-border rounded-md p-4 flex items-center justify-between hover:border-border/80 cursor-pointer transition-colors shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-md bg-card flex items-center justify-center text-muted-foreground border border-border shadow-sm">
+                                    <i class="fa-solid fa-box-open"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-foreground text-sm font-sans">Outpost Depot</div>
+                                    <div class="text-xs text-muted-foreground">Mining Sector</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-mono font-bold text-foreground text-sm">2.3k / 4k</div>
+                                <div class="text-xs text-muted-foreground">57% Full</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Inventory Table -->
+            <div id="inventory-grid" class="glass-panel rounded-lg p-6 overflow-hidden flex flex-col">
+                <div class="flex justify-between items-center mb-6 border-b border-border pb-4">
+                    <h2 class="text-xl font-bold text-foreground flex items-center gap-2 font-sans">
+                        <i class="fa-solid fa-boxes-stacked text-primary"></i> Resource Inventory
+                    </h2>
+                    <div class="flex gap-4">
+                        <div class="relative">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm"></i>
+                            <input type="text" placeholder="Search resources..." class="bg-card border border-border rounded-md pl-9 pr-4 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors w-64 shadow-sm placeholder:text-muted-foreground">
+                        </div>
+                        <button class="bg-card border border-border rounded-md px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-2 shadow-sm font-medium">
+                            <i class="fa-solid fa-filter text-muted-foreground"></i> Filter
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-border text-xs text-muted-foreground uppercase tracking-wider font-sans">
+                                <th class="pb-3 font-bold px-4">Resource <i class="fa-solid fa-sort ml-1 cursor-pointer hover:text-foreground"></i></th>
+                                <th class="pb-3 font-bold px-4 text-right">Quantity <i class="fa-solid fa-sort ml-1 cursor-pointer hover:text-foreground"></i></th>
+                                <th class="pb-3 font-bold px-4 text-right">Avg Cost <i class="fa-solid fa-sort ml-1 cursor-pointer hover:text-foreground"></i></th>
+                                <th class="pb-3 font-bold px-4 text-right">Market Val <i class="fa-solid fa-sort ml-1 cursor-pointer hover:text-foreground"></i></th>
+                                <th class="pb-3 font-bold px-4 text-center">Trend</th>
+                                <th class="pb-3 font-bold px-4 text-right">Weight <i class="fa-solid fa-sort ml-1 cursor-pointer hover:text-foreground"></i></th>
+                                <th class="pb-3 font-bold px-4 text-center">Quick Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            <!-- Row 1: Iron Ore -->
+                            <tr class="hover:bg-muted/30 transition-colors group">
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-card flex items-center justify-center text-chart-2 border border-border shadow-sm">
+                                            <i class="fa-solid fa-cubes text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-foreground text-sm font-sans">Iron Ore</div>
+                                            <div class="text-[10px] text-muted-foreground uppercase tracking-wider font-mono">Tier 1 Raw</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4 text-right font-mono font-medium text-foreground text-sm">4,250</td>
+                                <td class="py-4 px-4 text-right font-mono text-muted-foreground text-sm">38.50</td>
+                                <td class="py-4 px-4 text-right font-mono font-medium text-foreground text-sm">
+                                    42.50 <span class="text-[#2D4F1E] text-xs ml-1 font-bold">(+10.3%)</span>
+                                </td>
+                                <td class="py-4 px-4 w-24">
+                                    <div class="h-6 w-full" id="trend1"></div>
+                                </td>
+                                <td class="py-4 px-4 text-right font-mono text-primary text-sm font-medium">8,500 <span class="text-xs text-muted-foreground">WGT</span></td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-primary text-muted-foreground hover:text-primary transition-colors flex items-center justify-center shadow-sm" title="Sell on Market">
+                                            <i class="fa-solid fa-store text-xs"></i>
+                                        </button>
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-chart-2 text-muted-foreground hover:text-chart-2 transition-colors flex items-center justify-center shadow-sm" title="Reserve for Production">
+                                            <i class="fa-solid fa-hammer text-xs"></i>
+                                        </button>
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-foreground text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shadow-sm" title="Move Location">
+                                            <i class="fa-solid fa-truck-fast text-xs"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Row 2: Raw Quartz -->
+                            <tr class="hover:bg-muted/30 transition-colors group">
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-card flex items-center justify-center text-chart-3 border border-border shadow-sm">
+                                            <i class="fa-solid fa-gem text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-foreground text-sm font-sans">Raw Quartz</div>
+                                            <div class="text-[10px] text-muted-foreground uppercase tracking-wider font-mono">Tier 2 Raw</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4 text-right font-mono font-medium text-foreground text-sm">850</td>
+                                <td class="py-4 px-4 text-right font-mono text-muted-foreground text-sm">135.00</td>
+                                <td class="py-4 px-4 text-right font-mono font-medium text-foreground text-sm">
+                                    128.00 <span class="text-destructive text-xs ml-1 font-bold">(-5.1%)</span>
+                                </td>
+                                <td class="py-4 px-4 w-24">
+                                    <div class="h-6 w-full" id="trend2"></div>
+                                </td>
+                                <td class="py-4 px-4 text-right font-mono text-foreground text-sm">1,700 <span class="text-xs text-muted-foreground">WGT</span></td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-primary text-muted-foreground hover:text-primary transition-colors flex items-center justify-center shadow-sm" title="Sell on Market">
+                                            <i class="fa-solid fa-store text-xs"></i>
+                                        </button>
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-chart-2 text-muted-foreground hover:text-chart-2 transition-colors flex items-center justify-center shadow-sm" title="Reserve for Production">
+                                            <i class="fa-solid fa-hammer text-xs"></i>
+                                        </button>
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-foreground text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shadow-sm" title="Move Location">
+                                            <i class="fa-solid fa-truck-fast text-xs"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- Row 3: Timber -->
+                            <tr class="hover:bg-muted/30 transition-colors group">
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-card flex items-center justify-center text-[#2D4F1E] border border-border shadow-sm">
+                                            <i class="fa-solid fa-tree text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-foreground text-sm font-sans">Timber</div>
+                                            <div class="text-[10px] text-muted-foreground uppercase tracking-wider font-mono">Tier 1 Raw</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4 text-right font-mono font-medium text-foreground text-sm">1,200</td>
+                                <td class="py-4 px-4 text-right font-mono text-muted-foreground text-sm">12.00</td>
+                                <td class="py-4 px-4 text-right font-mono font-medium text-foreground text-sm">
+                                    14.50 <span class="text-[#2D4F1E] text-xs ml-1 font-bold">(+20.8%)</span>
+                                </td>
+                                <td class="py-4 px-4 w-24">
+                                    <div class="h-6 w-full" id="trend3"></div>
+                                </td>
+                                <td class="py-4 px-4 text-right font-mono text-foreground text-sm">2,400 <span class="text-xs text-muted-foreground">WGT</span></td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-primary text-muted-foreground hover:text-primary transition-colors flex items-center justify-center shadow-sm" title="Sell on Market">
+                                            <i class="fa-solid fa-store text-xs"></i>
+                                        </button>
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-chart-2 text-muted-foreground hover:text-chart-2 transition-colors flex items-center justify-center shadow-sm" title="Reserve for Production">
+                                            <i class="fa-solid fa-hammer text-xs"></i>
+                                        </button>
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-foreground text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shadow-sm" title="Move Location">
+                                            <i class="fa-solid fa-truck-fast text-xs"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                             <tr class="hover:bg-muted/30 transition-colors group">
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-card flex items-center justify-center text-chart-4 border border-border shadow-sm">
+                                            <i class="fa-solid fa-droplet text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-foreground text-sm font-sans">Aether Fluid</div>
+                                            <div class="text-[10px] text-muted-foreground uppercase tracking-wider font-mono">Tier 3 Refined</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4 text-right font-mono font-medium text-foreground text-sm">45</td>
+                                <td class="py-4 px-4 text-right font-mono text-muted-foreground text-sm">450.00</td>
+                                <td class="py-4 px-4 text-right font-mono font-medium text-foreground text-sm">
+                                    480.00 <span class="text-[#2D4F1E] text-xs ml-1 font-bold">(+6.6%)</span>
+                                </td>
+                                <td class="py-4 px-4 w-24">
+                                    <div class="h-6 w-full" id="trend4"></div>
+                                </td>
+                                <td class="py-4 px-4 text-right font-mono text-foreground text-sm">45 <span class="text-xs text-muted-foreground">WGT</span></td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-primary text-muted-foreground hover:text-primary transition-colors flex items-center justify-center shadow-sm">
+                                            <i class="fa-solid fa-store text-xs"></i>
+                                        </button>
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-chart-2 text-muted-foreground hover:text-chart-2 transition-colors flex items-center justify-center shadow-sm">
+                                            <i class="fa-solid fa-hammer text-xs"></i>
+                                        </button>
+                                        <button class="w-8 h-8 rounded bg-card border border-border hover:border-foreground text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shadow-sm">
+                                            <i class="fa-solid fa-truck-fast text-xs"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Action Panels Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Quick Reserve Panel -->
+                <div id="reserve-panel" class="glass-panel rounded-lg p-6">
+                    <h2 class="text-lg font-bold text-foreground mb-4 border-b border-border pb-2 font-sans">Production Reservation</h2>
+                    <p class="text-sm text-muted-foreground mb-4 font-serif">Lock resources to prevent accidental sale before production ticks.</p>
+                    
+                    <div class="bg-muted/50 rounded-md p-4 border border-border mb-4 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-bold text-foreground font-sans">Active Blueprint: Steel Ingots</span>
+                            <span class="text-xs text-primary font-mono font-medium">Needs: 2 Iron, 1 Coal</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <select class="bg-card border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary flex-grow shadow-sm">
+                                <option>Iron Ore (Available: 4,250)</option>
+                                <option>Coal (Available: 0)</option>
+                            </select>
+                            <input type="number" value="100" class="bg-card border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary w-24 font-mono shadow-sm">
+                            <button class="bg-primary/10 text-primary border border-primary/50 rounded-md px-4 py-2 text-sm font-bold hover:bg-primary hover:text-primary-foreground transition-colors shadow-sm font-sans">
+                                Reserve
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Transfer Panel -->
+                <div id="transfer-panel" class="glass-panel rounded-lg p-6">
+                    <h2 class="text-lg font-bold text-foreground mb-4 border-b border-border pb-2 font-sans">Logistics Transfer</h2>
+                    <p class="text-sm text-muted-foreground mb-4 font-serif">Move goods between storage locations. Takes 1 tick per sector.</p>
+                    
+                    <div class="bg-muted/50 rounded-md p-4 border border-border shadow-sm">
+                        <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center mb-4">
+                            <div>
+                                <label class="block text-xs text-muted-foreground mb-1 font-bold uppercase tracking-wider font-sans">From</label>
+                                <select class="w-full bg-card border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary shadow-sm">
+                                    <option>Primary Vault</option>
+                                </select>
+                            </div>
+                            <div class="text-muted-foreground mt-4">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-muted-foreground mb-1 font-bold uppercase tracking-wider font-sans">To</label>
+                                <select class="w-full bg-card border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary shadow-sm">
+                                    <option>Outpost Depot</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="w-full bg-card border border-border rounded-md py-2 text-sm text-foreground hover:bg-muted font-medium transition-colors shadow-sm">
+                            Select Items to Move
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        window.addEventListener('load', function() {
+            try {
+                // Sparkline config helper
+                const createSparkline = (id, data, color) => {
+                    Plotly.newPlot(id, [{
+                        y: data,
+                        type: 'scatter', mode: 'lines',
+                        line: { color: color, width: 2, shape: 'spline' }
+                    }], {
+                        margin: { t: 0, r: 0, b: 0, l: 0 },
+                        xaxis: { visible: false }, yaxis: { visible: false },
+                        plot_bgcolor: 'transparent', paper_bgcolor: 'transparent'
+                    }, {displayModeBar: false, staticPlot: true});
+                };
+
+                // Sparklines for table rows using theme colors
+                createSparkline('trend1', [38, 39, 40, 41, 41.5, 42.5], '#2D4F1E'); // Green up
+                createSparkline('trend2', [135, 134, 132, 130, 129, 128], '#b54a35'); // Red down
+                createSparkline('trend3', [12, 12.5, 13, 13.5, 14, 14.5], '#2D4F1E'); // Green up
+                createSparkline('trend4', [460, 465, 470, 475, 478, 480], '#2D4F1E'); // Green up
+
+            } catch(e) { console.error('Plotly error:', e); }
+        });
+        
+        // Secondary init
+        setTimeout(function() {
+            try {
+                window.dispatchEvent(new Event('resize'));
+            } catch(e){}
+        }, 1200);
+    </script>
+</body>
+</html>

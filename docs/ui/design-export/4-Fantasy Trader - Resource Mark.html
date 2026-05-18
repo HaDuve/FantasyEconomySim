@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Trader - Resource Marketplace (Auction Board)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.plot.ly/plotly-3.1.1.min.js"></script>
+
+    <style>
+        
+
+        body { margin: 0; padding: 0; font-family: var(--font-serif); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--background); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        
+        .glass-panel {
+            background: rgba(255, 252, 245, 0.85); /* --card with opacity */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(74, 63, 53, 0.1), 0 2px 4px -1px rgba(74, 63, 53, 0.06);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-sans);
+        }
+
+        .pill-nav {
+            background: var(--muted);
+            border-radius: 9999px;
+            padding: 4px;
+            display: inline-flex;
+            border: 1px solid var(--border);
+        }
+        .pill-nav-item {
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font-sans);
+        }
+        .pill-nav-item.active {
+            background: var(--primary);
+            color: var(--primary-foreground);
+            box-shadow: 0 0 15px rgba(166, 124, 82, 0.4);
+        }
+        .pill-nav-item:not(.active) {
+            color: var(--muted-foreground);
+        }
+        .pill-nav-item:not(.active):hover {
+            color: var(--foreground);
+            background: var(--background);
+        }
+    </style>
+<style>
+:root {
+          --background: #f5f1e6;
+          --foreground: #4a3f35;
+          --card: #fffcf5;
+          --card-foreground: #4a3f35;
+          --popover: #fffcf5;
+          --popover-foreground: #4a3f35;
+          --primary: #a67c52;
+          --primary-foreground: #ffffff;
+          --secondary: #e2d8c3;
+          --secondary-foreground: #5c4d3f;
+          --muted: #ece5d8;
+          --muted-foreground: #7d6b56;
+          --accent: #d4c8aa;
+          --accent-foreground: #4a3f35;
+          --destructive: #b54a35;
+          --destructive-foreground: #ffffff;
+          --border: #dbd0ba;
+          --input: #dbd0ba;
+          --ring: #a67c52;
+          --chart-1: #a67c52;
+          --chart-2: #8d6e4c;
+          --chart-3: #735a3a;
+          --chart-4: #b3906f;
+          --chart-5: #c0a080;
+          --sidebar: #ece5d8;
+          --sidebar-foreground: #4a3f35;
+          --sidebar-primary: #a67c52;
+          --sidebar-primary-foreground: #ffffff;
+          --sidebar-accent: #d4c8aa;
+          --sidebar-accent-foreground: #4a3f35;
+          --sidebar-border: #dbd0ba;
+          --sidebar-ring: #a67c52;
+          --font-sans: Libre Baskerville, serif;
+          --font-serif: Lora, serif;
+          --font-mono: IBM Plex Mono, monospace;
+          --radius: 0.25rem;
+          --shadow-x: 2px;
+          --shadow-y: 3px;
+          --shadow-blur: 5px;
+          --shadow-spread: 0px;
+          --shadow-opacity: 0.12;
+          --shadow-color: hsl(28 13% 20%);
+          --shadow-2xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
+          --shadow-xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
+          --shadow-sm: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
+          --shadow: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
+          --shadow-md: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 2px 4px -1px hsl(28 13% 20% / 0.12);
+          --shadow-lg: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 4px 6px -1px hsl(28 13% 20% / 0.12);
+          --shadow-xl: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 8px 10px -1px hsl(28 13% 20% / 0.12);
+          --shadow-2xl: 2px 3px 5px 0px hsl(28 13% 20% / 0.30);
+          --tracking-normal: 0em;
+          --spacing: 0.25rem;
+}
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+            <script>
+            // tailwind.config (IMPORTANT FOR STYLES)
+            tailwind.config = {
+                        theme: {
+                            extend: {
+                                colors: {
+                                    "border": "var(--border)",
+                                    "input": "var(--input)",
+                                    "ring": "var(--ring)",
+                                    "background": "var(--background)",
+                                    "foreground": "var(--foreground)",
+                                    "primary": {
+                                        "DEFAULT": "var(--primary)",
+                                        "foreground": "var(--primary-foreground)",
+                                    },
+                                    "secondary": {
+                                        "DEFAULT": "var(--secondary)",
+                                        "foreground": "var(--secondary-foreground)",
+                                    },
+                                    "destructive": {
+                                        "DEFAULT": "var(--destructive)",
+                                        "foreground": "var(--destructive-foreground)",
+                                    },
+                                    "muted": {
+                                        "DEFAULT": "var(--muted)",
+                                        "foreground": "var(--muted-foreground)",
+                                    },
+                                    "accent": {
+                                        "DEFAULT": "var(--accent)",
+                                        "foreground": "var(--accent-foreground)",
+                                    },
+                                    "popover": {
+                                        "DEFAULT": "var(--popover)",
+                                        "foreground": "var(--popover-foreground)",
+                                    },
+                                    "card": {
+                                        "DEFAULT": "var(--card)",
+                                        "foreground": "var(--card-foreground)",
+                                    },
+                                    "sidebar": {
+                                        "DEFAULT": "var(--sidebar)",
+                                        "foreground": "var(--sidebar-foreground)",
+                                        "primary": "var(--sidebar-primary)",
+                                        "primary-foreground": "var(--sidebar-primary-foreground)",
+                                        "accent": "var(--sidebar-accent)",
+                                        "accent-foreground": "var(--sidebar-accent-foreground)",
+                                        "border": "var(--sidebar-border)",
+                                        "ring": "var(--sidebar-ring)",
+                                    },
+                                    "chart": {
+                                        "1": "var(--chart-1)",
+                                        "2": "var(--chart-2)",
+                                        "3": "var(--chart-3)",
+                                        "4": "var(--chart-4)",
+                                        "5": "var(--chart-5)",
+                                    },
+                                },
+                                "borderRadius": {
+                                    "lg": "var(--radius)",
+                                    "md": "calc(var(--radius) - 2px)",
+                                    "sm": "calc(var(--radius) - 4px)",
+                                },
+                                "fontFamily": {
+                                    "sans": ["var(--font-sans)"],
+                                    "serif": ["var(--font-serif)"],
+                                    "mono": ["var(--font-mono)"],
+                                },
+                                "boxShadow": {
+                                    "2xs": "var(--shadow-2xs)",
+                                    "xs": "var(--shadow-xs)",
+                                    "sm": "var(--shadow-sm)",
+                                    "DEFAULT": "var(--shadow)",
+                                    "md": "var(--shadow-md)",
+                                    "lg": "var(--shadow-lg)",
+                                    "xl": "var(--shadow-xl)",
+                                    "2xl": "var(--shadow-2xl)",
+                                },
+                            },
+                        }
+                    }
+            </script>
+            
+</head>
+<body class="min-h-screen flex flex-col overflow-x-hidden antialiased bg-background text-foreground" style="background-image: url('https://www.transparenttextures.com/patterns/parchment.png')">
+
+    <!-- Header -->
+    <header id="main-header" class="w-full z-20 px-8 py-4 flex justify-between items-center bg-card/90 backdrop-blur-md border-b border-border sticky top-0 shadow-sm">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-[0_0_10px_rgba(166,124,82,0.4)] border border-border">
+                    <i class="fa-solid fa-scroll text-primary-foreground text-sm"></i>
+                </div>
+                <span class="font-bold text-xl tracking-wide font-sans text-foreground">Aetheria Markets</span>
+            </div>
+            
+            <nav class="hidden lg:flex items-center gap-6 font-sans">
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Dashboard</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Inventory</a>
+                <a href="#" class="text-primary font-bold border-b-2 border-primary pb-1">Marketplace</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Production</a>
+                <a href="#" class="text-muted-foreground hover:text-foreground transition-colors pb-1">Ledger</a>
+            </nav>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3 glass-panel px-4 py-2 rounded-lg border-primary/30 shadow-[0_0_10px_rgba(166,124,82,0.2)]">
+                <i class="fa-solid fa-hourglass-half text-primary"></i>
+                <div class="flex flex-col">
+                    <span class="text-xs text-muted-foreground font-mono">TICK 142</span>
+                    <span class="text-sm font-bold text-foreground font-mono">08:45 REMAINING</span>
+                </div>
+                <div class="w-24 h-1.5 bg-muted rounded-full ml-2 overflow-hidden border border-border">
+                    <div class="h-full bg-primary w-[40%] rounded-full shadow-[0_0_5px_rgba(166,124,82,0.6)]"></div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button class="relative text-muted-foreground hover:text-foreground transition-colors">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full"></span>
+                </button>
+                <div class="w-10 h-10 rounded-full bg-muted border border-border overflow-hidden shadow-sm">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Profile" class="w-full h-full object-cover">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-8 w-full max-w-[1600px] mx-auto relative z-10">
+        <!-- Background Effects -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div class="absolute top-[10%] left-[20%] w-[30%] h-[30%] rounded-full bg-primary/10 blur-[120px]"></div>
+            <div class="absolute bottom-[20%] right-[10%] w-[25%] h-[25%] rounded-full bg-accent/20 blur-[120px]"></div>
+        </div>
+
+        <div class="relative z-10 flex flex-col gap-6">
+            
+            <!-- Top Section: Global Market Ticker & Filters -->
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-2">
+                <div>
+                    <h1 class="text-3xl font-bold text-foreground mb-2">Resource Exchange</h1>
+                    <p class="text-muted-foreground text-sm font-serif">Real-time auction board. All trades execute at tick resolution.</p>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-4">
+                    <div class="pill-nav">
+                        <div class="pill-nav-item active">All Resources</div>
+                        <div class="pill-nav-item">Raw</div>
+                        <div class="pill-nav-item">Refined</div>
+                        <div class="pill-nav-item">Rare</div>
+                    </div>
+                    
+                    <div class="glass-panel rounded-full px-4 py-2 flex items-center gap-3">
+                        <i class="fa-solid fa-clock text-primary text-sm"></i>
+                        <select class="bg-transparent border-none text-foreground text-sm font-medium focus:outline-none focus:ring-0 cursor-pointer font-sans">
+                            <option value="24h" class="bg-card">Last 24h</option>
+                            <option value="12h" class="bg-card">Last 12h</option>
+                            <option value="1h" class="bg-card">Last 1h</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Market Ticker Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <!-- Ticker 1 -->
+                <div class="glass-panel rounded-lg p-5 flex flex-col relative overflow-hidden border-border hover:border-primary/50 transition-colors cursor-pointer group">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-chart-2/5 rounded-full blur-xl -mr-10 -mt-10 group-hover:bg-chart-2/10 transition-all"></div>
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-muted flex items-center justify-center text-chart-2 border border-border shadow-sm">
+                                <i class="fa-solid fa-cubes text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-foreground font-sans">Iron Ore</h3>
+                                <span class="text-xs text-muted-foreground font-mono">IRON-R</span>
+                            </div>
+                        </div>
+                        <div class="bg-muted rounded-full px-2 py-1 text-[10px] font-mono text-muted-foreground border border-border">
+                            Vol: 12.4k
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end relative z-10">
+                        <div>
+                            <div class="text-2xl font-mono font-bold text-foreground">42.50</div>
+                            <div class="text-xs text-[#2D4F1E] flex items-center gap-1 mt-1 font-sans">
+                                <i class="fa-solid fa-arrow-up"></i> 10.3%
+                            </div>
+                        </div>
+                        <div class="w-20 h-8" id="mini-chart-1"></div>
+                    </div>
+                </div>
+
+                <!-- Ticker 2 -->
+                <div class="glass-panel rounded-lg p-5 flex flex-col relative overflow-hidden border-border hover:border-primary/50 transition-colors cursor-pointer group">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-chart-3/5 rounded-full blur-xl -mr-10 -mt-10 group-hover:bg-chart-3/10 transition-all"></div>
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-muted flex items-center justify-center text-chart-3 border border-border shadow-sm">
+                                <i class="fa-solid fa-gem text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-foreground font-sans">Raw Quartz</h3>
+                                <span class="text-xs text-muted-foreground font-mono">QRTZ-R</span>
+                            </div>
+                        </div>
+                        <div class="bg-muted rounded-full px-2 py-1 text-[10px] font-mono text-muted-foreground border border-border">
+                            Vol: 3.2k
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end relative z-10">
+                        <div>
+                            <div class="text-2xl font-mono font-bold text-foreground">128.00</div>
+                            <div class="text-xs text-destructive flex items-center gap-1 mt-1 font-sans">
+                                <i class="fa-solid fa-arrow-down"></i> 5.1%
+                            </div>
+                        </div>
+                        <div class="w-20 h-8" id="mini-chart-2"></div>
+                    </div>
+                </div>
+
+                <!-- Ticker 3 -->
+                <div class="glass-panel rounded-lg p-5 flex flex-col relative overflow-hidden border-border hover:border-primary/50 transition-colors cursor-pointer group">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-[#2D4F1E]/5 rounded-full blur-xl -mr-10 -mt-10 group-hover:bg-[#2D4F1E]/10 transition-all"></div>
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-muted flex items-center justify-center text-[#2D4F1E] border border-border shadow-sm">
+                                <i class="fa-solid fa-tree text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-foreground font-sans">Timber</h3>
+                                <span class="text-xs text-muted-foreground font-mono">TMBR-R</span>
+                            </div>
+                        </div>
+                        <div class="bg-muted rounded-full px-2 py-1 text-[10px] font-mono text-muted-foreground border border-border">
+                            Vol: 8.9k
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end relative z-10">
+                        <div>
+                            <div class="text-2xl font-mono font-bold text-foreground">14.50</div>
+                            <div class="text-xs text-[#2D4F1E] flex items-center gap-1 mt-1 font-sans">
+                                <i class="fa-solid fa-arrow-up"></i> 20.8%
+                            </div>
+                        </div>
+                        <div class="w-20 h-8" id="mini-chart-3"></div>
+                    </div>
+                </div>
+                
+                <!-- Ticker 4 -->
+                <div class="glass-panel rounded-lg p-5 flex flex-col relative overflow-hidden border-border hover:border-primary/50 transition-colors cursor-pointer group">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-chart-4/5 rounded-full blur-xl -mr-10 -mt-10 group-hover:bg-chart-4/10 transition-all"></div>
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-muted flex items-center justify-center text-chart-4 border border-border shadow-sm">
+                                <i class="fa-solid fa-droplet text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-foreground font-sans">Aether Fluid</h3>
+                                <span class="text-xs text-muted-foreground font-mono">ATHR-F</span>
+                            </div>
+                        </div>
+                        <div class="bg-muted rounded-full px-2 py-1 text-[10px] font-mono text-muted-foreground border border-border">
+                            Vol: 1.1k
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end relative z-10">
+                        <div>
+                            <div class="text-2xl font-mono font-bold text-foreground">480.00</div>
+                            <div class="text-xs text-[#2D4F1E] flex items-center gap-1 mt-1 font-sans">
+                                <i class="fa-solid fa-arrow-up"></i> 6.6%
+                            </div>
+                        </div>
+                        <div class="w-20 h-8" id="mini-chart-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Main Exchange Table (Col 8) -->
+                <div class="lg:col-span-8 glass-panel rounded-lg p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-bold text-foreground flex items-center gap-2 font-sans">
+                            <i class="fa-solid fa-list text-primary"></i> Market Depth & Pricing
+                        </h2>
+                        <div class="relative">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm"></i>
+                            <input type="text" placeholder="Search markets..." class="bg-background border border-border rounded-md pl-9 pr-4 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors w-64 font-sans shadow-inner">
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse font-sans">
+                            <thead>
+                                <tr class="border-b border-border/50 text-xs text-muted-foreground uppercase tracking-wider">
+                                    <th class="pb-3 font-medium px-4">Market</th>
+                                    <th class="pb-3 font-medium px-4 text-right">Best Bid</th>
+                                    <th class="pb-3 font-medium px-4 text-right">Best Ask</th>
+                                    <th class="pb-3 font-medium px-4 text-right">Last Price</th>
+                                    <th class="pb-3 font-medium px-4 text-center">Depth (Bid/Ask)</th>
+                                    <th class="pb-3 font-medium px-4 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border/30">
+                                <!-- Row 1: Iron Ore -->
+                                <tr class="hover:bg-muted/50 transition-colors group">
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded bg-muted flex items-center justify-center text-chart-2 border border-border shadow-sm">
+                                                <i class="fa-solid fa-cubes text-xs"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-foreground text-sm">Iron Ore</div>
+                                                <div class="text-[10px] text-muted-foreground font-serif">Tier 1 Raw</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-right font-mono text-[#2D4F1E] text-sm">42.10</td>
+                                    <td class="py-4 px-4 text-right font-mono text-destructive text-sm">42.80</td>
+                                    <td class="py-4 px-4 text-right font-mono text-foreground text-sm font-bold">
+                                        42.50 <i class="fa-solid fa-caret-up text-[#2D4F1E] text-[10px] ml-1"></i>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center justify-center w-full max-w-[120px] mx-auto border border-border/50 rounded-full p-[1px] bg-background">
+                                            <div class="w-1/2 h-1.5 bg-background rounded-l-full overflow-hidden flex justify-end">
+                                                <div class="h-full bg-[#2D4F1E]/80 w-[70%] rounded-l-full"></div>
+                                            </div>
+                                            <div class="w-[1px] h-3 bg-border mx-0.5"></div>
+                                            <div class="w-1/2 h-1.5 bg-background rounded-r-full overflow-hidden flex justify-start">
+                                                <div class="h-full bg-destructive/80 w-[40%] rounded-r-full"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-center">
+                                        <button class="bg-primary hover:bg-chart-2 text-primary-foreground rounded-md px-4 py-1.5 text-xs font-bold transition-colors shadow-[0_0_10px_rgba(166,124,82,0.3)] border border-primary">
+                                            Trade
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Row 2: Raw Quartz -->
+                                <tr class="hover:bg-muted/50 transition-colors group">
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded bg-muted flex items-center justify-center text-chart-3 border border-border shadow-sm">
+                                                <i class="fa-solid fa-gem text-xs"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-foreground text-sm">Raw Quartz</div>
+                                                <div class="text-[10px] text-muted-foreground font-serif">Tier 2 Raw</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-right font-mono text-[#2D4F1E] text-sm">125.50</td>
+                                    <td class="py-4 px-4 text-right font-mono text-destructive text-sm">129.00</td>
+                                    <td class="py-4 px-4 text-right font-mono text-foreground text-sm font-bold">
+                                        128.00 <i class="fa-solid fa-caret-down text-destructive text-[10px] ml-1"></i>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center justify-center w-full max-w-[120px] mx-auto border border-border/50 rounded-full p-[1px] bg-background">
+                                            <div class="w-1/2 h-1.5 bg-background rounded-l-full overflow-hidden flex justify-end">
+                                                <div class="h-full bg-[#2D4F1E]/80 w-[30%] rounded-l-full"></div>
+                                            </div>
+                                            <div class="w-[1px] h-3 bg-border mx-0.5"></div>
+                                            <div class="w-1/2 h-1.5 bg-background rounded-r-full overflow-hidden flex justify-start">
+                                                <div class="h-full bg-destructive/80 w-[80%] rounded-r-full"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-center">
+                                        <button class="bg-card border border-border hover:border-primary text-foreground hover:bg-muted rounded-md px-4 py-1.5 text-xs font-bold transition-colors">
+                                            Trade
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Row 3: Timber -->
+                                <tr class="hover:bg-muted/50 transition-colors group">
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded bg-muted flex items-center justify-center text-[#2D4F1E] border border-border shadow-sm">
+                                                <i class="fa-solid fa-tree text-xs"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-foreground text-sm">Timber</div>
+                                                <div class="text-[10px] text-muted-foreground font-serif">Tier 1 Raw</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-right font-mono text-[#2D4F1E] text-sm">14.20</td>
+                                    <td class="py-4 px-4 text-right font-mono text-destructive text-sm">14.80</td>
+                                    <td class="py-4 px-4 text-right font-mono text-foreground text-sm font-bold">
+                                        14.50 <i class="fa-solid fa-caret-up text-[#2D4F1E] text-[10px] ml-1"></i>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center justify-center w-full max-w-[120px] mx-auto border border-border/50 rounded-full p-[1px] bg-background">
+                                            <div class="w-1/2 h-1.5 bg-background rounded-l-full overflow-hidden flex justify-end">
+                                                <div class="h-full bg-[#2D4F1E]/80 w-[60%] rounded-l-full"></div>
+                                            </div>
+                                            <div class="w-[1px] h-3 bg-border mx-0.5"></div>
+                                            <div class="w-1/2 h-1.5 bg-background rounded-r-full overflow-hidden flex justify-start">
+                                                <div class="h-full bg-destructive/80 w-[50%] rounded-r-full"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-center">
+                                        <button class="bg-card border border-border hover:border-primary text-foreground hover:bg-muted rounded-md px-4 py-1.5 text-xs font-bold transition-colors">
+                                            Trade
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Active Order Management Panel (Col 4) -->
+                <div class="lg:col-span-4 flex flex-col gap-6">
+                    
+                    <!-- Wallet / Balance Summary -->
+                    <div class="glass-panel rounded-lg p-6 relative overflow-hidden border-l-4 border-l-primary">
+                         <div class="absolute inset-0 bg-primary/5 pointer-events-none"></div>
+                         <h2 class="text-sm font-bold text-muted-foreground mb-2 relative z-10 font-sans uppercase tracking-wider">Trading Balance</h2>
+                         <div class="flex justify-between items-end relative z-10">
+                             <div class="text-3xl font-mono font-bold text-foreground flex items-center gap-2">
+                                 <i class="fa-solid fa-coins text-primary text-xl"></i> 24,500.00
+                             </div>
+                             <button class="text-xs text-primary hover:text-foreground transition-colors underline font-sans font-medium">Deposit</button>
+                         </div>
+                    </div>
+
+                    <!-- Orders List -->
+                    <div class="glass-panel rounded-lg p-6 flex-grow flex flex-col">
+                        <div class="flex justify-between items-center mb-4 border-b border-border pb-3">
+                            <h2 class="text-lg font-bold text-foreground font-sans">Active Orders</h2>
+                            <div class="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded border border-border">3 Open</div>
+                        </div>
+                        
+                        <div class="flex gap-2 mb-4">
+                            <button class="px-3 py-1 rounded-md bg-primary/10 text-primary border border-primary/50 text-xs font-bold font-sans">Open</button>
+                            <button class="px-3 py-1 rounded-md bg-muted text-muted-foreground border border-border hover:text-foreground hover:bg-background text-xs font-medium transition-colors font-sans">Filled</button>
+                            <button class="px-3 py-1 rounded-md bg-muted text-muted-foreground border border-border hover:text-foreground hover:bg-background text-xs font-medium transition-colors font-sans">Canceled</button>
+                        </div>
+
+                        <div class="space-y-3 overflow-y-auto pr-2">
+                            <!-- Order 1: Buy Iron -->
+                            <div class="bg-card border border-border rounded-md p-3 shadow-sm hover:border-primary/50 transition-colors">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-1.5 py-0.5 rounded bg-[#2D4F1E]/10 text-[#2D4F1E] text-[10px] font-bold uppercase tracking-wider border border-[#2D4F1E]/30 font-sans">Buy</span>
+                                        <span class="text-sm font-bold text-foreground font-sans">Iron Ore</span>
+                                    </div>
+                                    <span class="text-xs font-mono text-muted-foreground">#ORD-892</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mb-3 text-sm font-mono">
+                                    <div>
+                                        <div class="text-[10px] text-muted-foreground uppercase font-sans font-medium">Price</div>
+                                        <div class="text-foreground font-bold">41.50</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-[10px] text-muted-foreground uppercase font-sans font-medium">Qty</div>
+                                        <div class="text-foreground font-bold">0 / 500</div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center mt-2 pt-2 border-t border-border/50">
+                                    <div class="text-xs text-chart-2 font-sans font-medium"><i class="fa-solid fa-hourglass-half"></i> Pending</div>
+                                    <button class="text-xs text-destructive hover:text-foreground transition-colors font-sans font-medium"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                                </div>
+                            </div>
+
+                            <!-- Order 2: Sell Timber -->
+                            <div class="bg-card border border-border rounded-md p-3 shadow-sm hover:border-primary/50 transition-colors">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-[10px] font-bold uppercase tracking-wider border border-destructive/30 font-sans">Sell</span>
+                                        <span class="text-sm font-bold text-foreground font-sans">Timber</span>
+                                    </div>
+                                    <span class="text-xs font-mono text-muted-foreground">#ORD-891</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mb-3 text-sm font-mono">
+                                    <div>
+                                        <div class="text-[10px] text-muted-foreground uppercase font-sans font-medium">Price</div>
+                                        <div class="text-foreground font-bold">15.00</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-[10px] text-muted-foreground uppercase font-sans font-medium">Qty</div>
+                                        <div class="text-foreground font-bold">200 / 1000</div>
+                                    </div>
+                                </div>
+                                <div class="w-full h-1.5 bg-muted border border-border rounded-full mb-2 overflow-hidden">
+                                    <div class="h-full bg-primary w-[20%] rounded-full shadow-[0_0_5px_rgba(166,124,82,0.6)]"></div>
+                                </div>
+                                <div class="flex justify-between items-center mt-1 pt-2 border-t border-border/50">
+                                    <div class="text-xs text-primary font-sans font-medium"><i class="fa-solid fa-circle-notch fa-spin"></i> Partial (20%)</div>
+                                    <button class="text-xs text-destructive hover:text-foreground transition-colors font-sans font-medium"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full mt-4 py-2 border border-border border-dashed rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted hover:border-primary transition-colors flex items-center justify-center gap-2 font-sans font-medium">
+                            <i class="fa-solid fa-clock-rotate-left"></i> View Order History
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        window.addEventListener('load', function() {
+            try {
+                const createSparkline = (id, data, color) => {
+                    Plotly.newPlot(id, [{
+                        y: data,
+                        type: 'scatter', mode: 'lines',
+                        fill: 'tozeroy',
+                        fillcolor: color.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+                        line: { color: color, width: 2, shape: 'spline', smoothing: 1.3 }
+                    }], {
+                        margin: { t: 0, r: 0, b: 0, l: 0 },
+                        xaxis: { visible: false }, yaxis: { visible: false },
+                        plot_bgcolor: 'transparent', paper_bgcolor: 'transparent',
+                        showlegend: false
+                    }, {displayModeBar: false, staticPlot: true});
+                };
+
+                // Using theme hex values for plotly
+                const greenColor = 'rgb(45, 79, 30)'; // #2D4F1E
+                const redColor = 'rgb(181, 74, 53)'; // #b54a35 (destructive)
+
+                createSparkline('mini-chart-1', [38, 39, 40, 41, 41.5, 42.5], greenColor);
+                createSparkline('mini-chart-2', [135, 134, 132, 130, 129, 128], redColor);
+                createSparkline('mini-chart-3', [12, 12.5, 13, 13.5, 14, 14.5], greenColor);
+                createSparkline('mini-chart-4', [460, 465, 470, 475, 478, 480], greenColor);
+
+                const pills = document.querySelectorAll('.pill-nav-item');
+                pills.forEach(pill => {
+                    pill.addEventListener('click', () => {
+                        pills.forEach(p => p.classList.remove('active'));
+                        pill.classList.add('active');
+                    });
+                });
+
+            } catch(e) { console.error('Plotly error:', e); }
+        });
+        
+        setTimeout(function() {
+            try {
+                window.dispatchEvent(new Event('resize'));
+            } catch(e){}
+        }, 1200);
+    </script>
+</body>
+</html>
