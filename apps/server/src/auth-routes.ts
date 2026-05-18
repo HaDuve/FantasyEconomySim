@@ -1,5 +1,7 @@
-import type { ProfessionId } from "@fantasy-economy-sim/domain";
-import { isProfessionId } from "@fantasy-economy-sim/domain";
+import {
+  isStarterTrioProfessionId,
+  type StarterTrioProfessionId,
+} from "@fantasy-economy-sim/domain";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import {
@@ -11,7 +13,7 @@ import type { IdTokenVerifier } from "./auth/id-token-verifier.js";
 import type { Db } from "./db/client.js";
 
 type ConnectBody = {
-  profession?: ProfessionId;
+  profession?: StarterTrioProfessionId;
 };
 
 function readJsonBody(request: IncomingMessage): Promise<unknown> {
@@ -64,7 +66,10 @@ function isConnectBody(value: unknown): value is ConnectBody {
 
   const body = value as ConnectBody;
 
-  if (body.profession !== undefined && !isProfessionId(body.profession)) {
+  if (
+    body.profession !== undefined &&
+    !isStarterTrioProfessionId(body.profession)
+  ) {
     return false;
   }
 
