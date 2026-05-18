@@ -47,9 +47,9 @@ export function createServer(options: CreateServerOptions = {}) {
       }
     }
 
-    if (devRoutesEnabled && db && request.url?.startsWith("/dev/")) {
+    if (devRoutesEnabled && db && options.pool && request.url?.startsWith("/dev/")) {
       try {
-        await handleDevRoute(request, response, db);
+        await handleDevRoute(request, response, db, options.pool);
       } catch {
         response.writeHead(500, { "content-type": "application/json" });
         response.end(JSON.stringify({ error: "internal_error" }));

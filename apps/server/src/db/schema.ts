@@ -84,11 +84,33 @@ export const orders = pgTable(
   ],
 );
 
+/** Completed **global tick** history (CONTEXT). */
+export const globalTicks = pgTable(
+  "global_ticks",
+  {
+    tickId: bigint("tick_id", { mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    status: text("status").notNull().default("completed"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    errorMessage: text("error_message"),
+  },
+  (table) => [
+    check(
+      "global_ticks_status_valid",
+      sql`${table.status} in ('running', 'completed', 'failed')`,
+    ),
+  ],
+);
+
 /** Append-only **settlement** from a **tick auction** match (CONTEXT). */
 export const settlements = pgTable(
   "settlements",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    tickId: bigint("tick_id", { mode: "number" })
+      .notNull()
+      .references(() => globalTicks.tickId),
     resourceId: text("resource_id").notNull(),
     price: integer("price").notNull(),
     quantity: integer("quantity").notNull(),
@@ -186,16 +208,6 @@ export const workerAssignments = pgTable(
       .where(sql`${table.publicBuildingTypeId} is not null`),
   ],
 );
-
-/** Completed **global tick** history (CONTEXT). */
-export const globalTicks = pgTable("global_ticks", {
-  tickId: bigint("tick_id", { mode: "number" })
-    .primaryKey()
-    .generatedAlwaysAsIdentity(),
-  completedAt: timestamp("completed_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
 
 /** **Resource** quantities held in a player's **inventory**. */
 export const inventory = pgTable(

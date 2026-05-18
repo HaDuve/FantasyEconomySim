@@ -28,7 +28,6 @@ const idTokenVerifier =
     : createFirebaseIdTokenVerifier();
 
 const port = Number(process.env.PORT ?? 3000);
-const db = createDb(pool);
 const server = createServer({ pool, idTokenVerifier });
 
 const globalTickIntervalMs = Number(
@@ -40,7 +39,7 @@ if (!Number.isFinite(globalTickIntervalMs) || globalTickIntervalMs <= 0) {
 }
 
 const tickScheduler = startGlobalTickScheduler({
-  db,
+  pool,
   intervalMs: globalTickIntervalMs,
   onError: (error) => {
     console.error("global tick failed", error);

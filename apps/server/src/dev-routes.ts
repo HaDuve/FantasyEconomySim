@@ -3,6 +3,7 @@ import { isResourceId, isWalletCrowns } from "@fantasy-economy-sim/domain";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { Db } from "./db/client.js";
+import type { Pool } from "pg";
 import {
   createPlayerWithLedger,
   getInventory,
@@ -223,6 +224,7 @@ export async function handleDevRoute(
   request: IncomingMessage,
   response: ServerResponse,
   db: Db,
+  pool: Pool,
 ): Promise<boolean> {
   const { method, url } = request;
 
@@ -235,7 +237,7 @@ export async function handleDevRoute(
     (url === "/dev/market/global-tick" || url === "/dev/market/tick-auction")
   ) {
     try {
-      const result = await runGlobalTick(db);
+      const result = await runGlobalTick(pool);
       sendJson(response, 200, result);
     } catch (error) {
       sendMarketError(response, error);

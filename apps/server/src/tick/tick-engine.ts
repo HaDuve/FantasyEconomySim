@@ -1,6 +1,7 @@
-import { desc, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
+import type { Pool } from "pg";
 
-import type { Db } from "../db/client.js";
+import { createDbFromClient, type Db } from "../db/client.js";
 import { globalTicks } from "../db/schema.js";
 import { runWorldDrip } from "../market/supply-pool.js";
 import { runTickAuction, type TickAuctionResult } from "../market/tick-auction.js";
@@ -17,75 +18,151 @@ export type TickEngineResult = ProductionTickResult &
     tickId: number;
   };
 
+export type TickEngineProductionRunner = typeof runProductionTick;
+
 export type TickEngineOptions = {
   onPhaseComplete?: (phase: TickPhase) => void;
+  runProductionTick?: TickEngineProductionRunner;
 };
 
 export type TickEngine = {
-  runTick(db: Db): Promise<TickEngineResult>;
+  runTick(): Promise<TickEngineResult>;
 };
+
+const DEFAULT_PHASE_ORDER: TickPhase[] = [
+  "worldDrip",
+  "production",
+  "tickAuction",
+];
 
 const GLOBAL_TICK_ADVISORY_LOCK_KEY = 42;
 
-async function withGlobalTickLock<T>(db: Db, run: () => Promise<T>): Promise<T> {
-  await db.execute(sql`SELECT pg_advisory_lock(${GLOBAL_TICK_ADVISORY_LOCK_KEY})`);
-
-  try {
-    return await run();
-  } finally {
-    await db.execute(sql`SELECT pg_advisory_unlock(${GLOBAL_TICK_ADVISORY_LOCK_KEY})`);
-  }
-}
-
-async function recordCompletedTick(db: Db): Promise<number> {
+async function beginGlobalTick(db: Db): Promise<number> {
   const [row] = await db
     .insert(globalTicks)
-    .values({})
+    .values({ status: "running" })
     .returning({ tickId: globalTicks.tickId });
 
   if (!row) {
-    throw new Error("Failed to record completed global tick");
+    throw new Error("Failed to begin global tick");
   }
 
   return row.tickId;
+}
+
+async function completeGlobalTick(db: Db, tickId: number): Promise<void> {
+  await db
+    .update(globalTicks)
+    .set({ status: "completed", completedAt: new Date() })
+    .where(eq(globalTicks.tickId, tickId));
+}
+
+async function failGlobalTick(
+  db: Db,
+  tickId: number,
+  error: unknown,
+): Promise<void> {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+
+  await db
+    .update(globalTicks)
+    .set({
+      status: "failed",
+      completedAt: new Date(),
+      errorMessage,
+    })
+    .where(eq(globalTicks.tickId, tickId));
+}
+
+export async function runGlobalTickPhases(
+  db: Db,
+  tickId: number,
+  phases: TickPhase[],
+  options: TickEngineOptions = {},
+): Promise<Omit<TickEngineResult, "tickId">> {
+  const guard = new PhaseGuard();
+  const runProduction = options.runProductionTick ?? runProductionTick;
+  let production: ProductionTickResult = {
+    assignmentsRun: 0,
+    assignmentsSkipped: 0,
+    upkeepCharged: 0,
+    facilityFeesCharged: 0,
+  };
+  let auction: TickAuctionResult = { fillsApplied: 0, fillsSkipped: 0 };
+
+  for (const phase of phases) {
+    guard.enter(phase);
+
+    switch (phase) {
+      case "worldDrip":
+        await runWorldDrip(db);
+        break;
+      case "production":
+        production = await runProduction(db);
+        break;
+      case "tickAuction":
+        auction = await runTickAuction(db, tickId);
+        break;
+    }
+
+    options.onPhaseComplete?.(phase);
+  }
+
+  return { ...production, ...auction };
 }
 
 export async function getCurrentTickId(db: Db): Promise<number> {
   const rows = await db
     .select({ tickId: globalTicks.tickId })
     .from(globalTicks)
+    .where(eq(globalTicks.status, "completed"))
     .orderBy(desc(globalTicks.tickId))
     .limit(1);
 
   return rows[0]?.tickId ?? 0;
 }
 
-export async function runGlobalTick(db: Db): Promise<TickEngineResult> {
-  return createTickEngine().runTick(db);
+export async function runGlobalTick(pool: Pool): Promise<TickEngineResult> {
+  return createTickEngine(pool).runTick();
 }
 
-export function createTickEngine(options: TickEngineOptions = {}): TickEngine {
+export function createTickEngine(
+  pool: Pool,
+  options: TickEngineOptions = {},
+): TickEngine {
   return {
-    async runTick(db: Db): Promise<TickEngineResult> {
-      return withGlobalTickLock(db, async () => {
-        const guard = new PhaseGuard();
+    async runTick(): Promise<TickEngineResult> {
+      const client = await pool.connect();
+      const db = createDbFromClient(client) as unknown as Db;
 
-        guard.enter("worldDrip");
-        await runWorldDrip(db);
-        options.onPhaseComplete?.("worldDrip");
+      try {
+        await db.execute(
+          sql`SELECT pg_advisory_lock(${GLOBAL_TICK_ADVISORY_LOCK_KEY})`,
+        );
 
-        guard.enter("production");
-        const production = await runProductionTick(db);
-        options.onPhaseComplete?.("production");
+        const tickId = await beginGlobalTick(db);
 
-        guard.enter("tickAuction");
-        const auction = await runTickAuction(db);
-        options.onPhaseComplete?.("tickAuction");
+        try {
+          const result = await runGlobalTickPhases(
+            db,
+            tickId,
+            DEFAULT_PHASE_ORDER,
+            options,
+          );
+          await completeGlobalTick(db, tickId);
 
-        const tickId = await recordCompletedTick(db);
-
-        return { tickId, ...production, ...auction };
-      });
+          return { tickId, ...result };
+        } catch (error) {
+          await failGlobalTick(db, tickId, error);
+          console.error("global tick failed", { tickId, error });
+          throw error;
+        }
+      } finally {
+        await db.execute(
+          sql`SELECT pg_advisory_unlock(${GLOBAL_TICK_ADVISORY_LOCK_KEY})`,
+        );
+        client.release();
+      }
     },
   };
 }

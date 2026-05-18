@@ -1,10 +1,11 @@
-import type { Db } from "../db/client.js";
+import type { Pool } from "pg";
+
 import { createTickEngine, type TickEngine } from "./tick-engine.js";
 
 export const DEFAULT_GLOBAL_TICK_INTERVAL_MS = 60_000;
 
 export type GlobalTickSchedulerOptions = {
-  db: Db;
+  pool: Pool;
   intervalMs?: number;
   tickEngine?: TickEngine;
   onError?: (error: unknown) => void;
@@ -18,7 +19,7 @@ export function startGlobalTickScheduler(
   options: GlobalTickSchedulerOptions,
 ): GlobalTickScheduler {
   const intervalMs = options.intervalMs ?? DEFAULT_GLOBAL_TICK_INTERVAL_MS;
-  const tickEngine = options.tickEngine ?? createTickEngine();
+  const tickEngine = options.tickEngine ?? createTickEngine(options.pool);
   let stopped = false;
   let running = false;
 
@@ -30,13 +31,15 @@ export function startGlobalTickScheduler(
     running = true;
 
     try {
-      await tickEngine.runTick(options.db);
+      await tickEngine.runTick();
     } catch (error) {
       options.onError?.(error);
     } finally {
       running = false;
     }
   };
+
+  void tick();
 
   const timer = setInterval(() => {
     void tick();

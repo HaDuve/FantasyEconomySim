@@ -3,12 +3,26 @@ import { describe, expect, it, vi } from "vitest";
 import { startGlobalTickScheduler } from "./tick-scheduler.js";
 
 describe("startGlobalTickScheduler", () => {
+  it("runs the first global tick immediately on start", () => {
+    const runTick = vi.fn().mockResolvedValue({ tickId: 1 });
+
+    const scheduler = startGlobalTickScheduler({
+      pool: {} as never,
+      intervalMs: 60_000,
+      tickEngine: { runTick },
+    });
+
+    scheduler.stop();
+
+    expect(runTick).toHaveBeenCalledTimes(1);
+  });
+
   it("invokes the tick engine on the configured interval", async () => {
     vi.useFakeTimers();
 
     const runTick = vi.fn().mockResolvedValue({ tickId: 1 });
     const scheduler = startGlobalTickScheduler({
-      db: {} as never,
+      pool: {} as never,
       intervalMs: 50,
       tickEngine: { runTick },
     });

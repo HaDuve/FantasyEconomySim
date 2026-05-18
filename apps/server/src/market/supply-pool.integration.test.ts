@@ -149,7 +149,7 @@ describe("supply pool", () => {
       quantity: 4,
     });
 
-    const { fillsApplied } = await runGlobalTick(db);
+    const { fillsApplied } = await runGlobalTick(pool);
 
     expect(fillsApplied).toBe(1);
     expect(await getSupplyPool(db)).toEqual(WORLD_DRIP_PER_TICK);
