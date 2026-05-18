@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS "settlements";
+DROP TABLE IF EXISTS "orders";

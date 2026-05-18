@@ -35,5 +35,6 @@ export {
   match,
   type Fill,
   type LimitOrder,
+  type MatchOptions,
   type MatchResult,
 } from "./order-book.js";

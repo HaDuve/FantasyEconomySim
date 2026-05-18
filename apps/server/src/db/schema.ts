@@ -54,6 +54,68 @@ export const wallets = pgTable(
   ],
 );
 
+/** Open **GTC** limit **order** on the **market** (CONTEXT). */
+export const orders = pgTable(
+  "orders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => players.id, { onDelete: "cascade" }),
+    resourceId: text("resource_id").notNull(),
+    side: text("side").notNull(),
+    price: integer("price").notNull(),
+    /** Open qty; 0 = fully filled (row kept for settlement FKs). */
+    quantity: integer("quantity").notNull(),
+    placedAt: timestamp("placed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("orders_side_valid", sql`${table.side} in ('buy', 'sell')`),
+    check("orders_price_positive", sql`${table.price} > 0`),
+    check("orders_quantity_non_negative", sql`${table.quantity} >= 0`),
+    check(
+      "orders_resource_id_valid",
+      sql`${table.resourceId} in ('grain', 'game', 'lumber', 'ore', 'herbs', 'ingots', 'potions', 'scrolls')`,
+    ),
+  ],
+);
+
+/** Append-only **settlement** from a **tick auction** match (CONTEXT). */
+export const settlements = pgTable(
+  "settlements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resourceId: text("resource_id").notNull(),
+    price: integer("price").notNull(),
+    quantity: integer("quantity").notNull(),
+    buyOrderId: uuid("buy_order_id")
+      .notNull()
+      .references(() => orders.id),
+    sellOrderId: uuid("sell_order_id")
+      .notNull()
+      .references(() => orders.id),
+    buyerPlayerId: uuid("buyer_player_id")
+      .notNull()
+      .references(() => players.id),
+    sellerPlayerId: uuid("seller_player_id")
+      .notNull()
+      .references(() => players.id),
+    settledAt: timestamp("settled_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("settlements_price_positive", sql`${table.price} > 0`),
+    check("settlements_quantity_positive", sql`${table.quantity} > 0`),
+    check(
+      "settlements_resource_id_valid",
+      sql`${table.resourceId} in ('grain', 'game', 'lumber', 'ore', 'herbs', 'ingots', 'potions', 'scrolls')`,
+    ),
+  ],
+);
+
 /** **Resource** quantities held in a player's **inventory**. */
 export const inventory = pgTable(
   "inventory",

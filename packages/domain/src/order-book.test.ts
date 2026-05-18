@@ -181,6 +181,29 @@ describe("OrderBook.match", () => {
     );
   });
 
+  it("skips a blocked top pair and matches the next cross at the same prices", () => {
+    const bids: LimitOrder[] = [
+      { orderId: "b-blocked", price: 10, quantity: 5, placedAt: 1 },
+      { orderId: "b-next", price: 10, quantity: 5, placedAt: 2 },
+    ];
+    const asks: LimitOrder[] = [
+      { orderId: "a1", price: 8, quantity: 10, placedAt: 3 },
+    ];
+    const blockedPairs = new Set(["b-blocked:a1"]);
+
+    const result = match("grain", bids, asks, { blockedPairs });
+
+    expect(result.fills).toEqual([
+      { buyOrderId: "b-next", sellOrderId: "a1", price: 8, quantity: 5 },
+    ]);
+    expect(result.remainingBids).toEqual([
+      { orderId: "b-blocked", price: 10, quantity: 5, placedAt: 1 },
+    ]);
+    expect(result.remainingAsks).toEqual([
+      { orderId: "a1", price: 8, quantity: 5, placedAt: 3 },
+    ]);
+  });
+
   it("matches each resource book in isolation", () => {
     const bid: LimitOrder = {
       orderId: "b1",

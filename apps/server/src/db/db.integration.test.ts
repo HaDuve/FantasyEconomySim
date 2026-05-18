@@ -23,6 +23,7 @@ import {
 } from "./players.js";
 
 const downMigrations = [
+  "down/0004_useful_mephisto.down.sql",
   "down/0003_guest_starter_workers.down.sql",
   "down/0002_brief_xorn.down.sql",
   "down/0001_free_wendell_vaughn.down.sql",

@@ -9,7 +9,7 @@ import {
   RESOURCE_IDS,
   toWalletCrowns,
 } from "@fantasy-economy-sim/domain";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import type { Db, DbExecutor } from "./client.js";
 import { rowsToInventorySnapshot } from "./inventory-snapshot.js";
@@ -82,6 +82,36 @@ export async function setWalletCrowns(
   return row;
 }
 
+export async function lockWalletForUpdate(
+  db: DbExecutor,
+  playerId: string,
+): Promise<void> {
+  await db
+    .select()
+    .from(wallets)
+    .where(eq(wallets.playerId, playerId))
+    .for("update")
+    .limit(1);
+}
+
+export async function lockInventoryForUpdate(
+  db: DbExecutor,
+  playerId: string,
+  resourceId: ResourceId,
+): Promise<void> {
+  await db
+    .select()
+    .from(inventory)
+    .where(
+      and(
+        eq(inventory.playerId, playerId),
+        eq(inventory.resourceId, resourceId),
+      ),
+    )
+    .for("update")
+    .limit(1);
+}
+
 export async function getWallet(
   db: DbExecutor,
   playerId: string,
@@ -131,4 +161,23 @@ export async function getInventory(
     .where(eq(inventory.playerId, playerId));
 
   return rowsToInventorySnapshot(rows);
+}
+
+export async function getInventoryQuantity(
+  db: DbExecutor,
+  playerId: string,
+  resourceId: ResourceId,
+): Promise<number> {
+  const [row] = await db
+    .select({ quantity: inventory.quantity })
+    .from(inventory)
+    .where(
+      and(
+        eq(inventory.playerId, playerId),
+        eq(inventory.resourceId, resourceId),
+      ),
+    )
+    .limit(1);
+
+  return row?.quantity ?? 0;
 }

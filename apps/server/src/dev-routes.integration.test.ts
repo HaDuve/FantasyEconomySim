@@ -112,6 +112,133 @@ describe("dev routes", () => {
     }
   });
 
+  it("runs tick auction via POST /dev/market/tick-auction", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        crowns: 120,
+        inventory: { grain: 20 },
+      }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    const buyer = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ crowns: 120 }),
+    });
+    const { playerId: buyerId } = (await buyer.json()) as { playerId: string };
+
+    await fetch(`${baseUrl}/dev/players/${buyerId}/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resourceId: "grain",
+        side: "buy",
+        price: 12,
+        quantity: 10,
+      }),
+    });
+    await fetch(`${baseUrl}/dev/players/${playerId}/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resourceId: "grain",
+        side: "sell",
+        price: 10,
+        quantity: 4,
+      }),
+    });
+
+    const auction = await fetch(`${baseUrl}/dev/market/tick-auction`, {
+      method: "POST",
+    });
+
+    expect(auction.status).toBe(200);
+    await expect(auction.json()).resolves.toEqual({
+      fillsApplied: 1,
+      fillsSkipped: 0,
+    });
+  });
+
+  it("rejects over-committed sell via POST /dev/players/:id/orders", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        crowns: 0,
+        inventory: { grain: 10 },
+      }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    const first = await fetch(`${baseUrl}/dev/players/${playerId}/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resourceId: "grain",
+        side: "sell",
+        price: 5,
+        quantity: 6,
+      }),
+    });
+    expect(first.status).toBe(201);
+
+    const second = await fetch(`${baseUrl}/dev/players/${playerId}/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resourceId: "grain",
+        side: "sell",
+        price: 5,
+        quantity: 5,
+      }),
+    });
+
+    expect(second.status).toBe(400);
+    await expect(second.json()).resolves.toMatchObject({
+      error: "insufficient_inventory",
+    });
+  });
+
+  it("rejects over-committed buy via POST /dev/players/:id/orders", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ crowns: 100 }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    const first = await fetch(`${baseUrl}/dev/players/${playerId}/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resourceId: "grain",
+        side: "buy",
+        price: 10,
+        quantity: 6,
+      }),
+    });
+    expect(first.status).toBe(201);
+
+    const second = await fetch(`${baseUrl}/dev/players/${playerId}/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resourceId: "ore",
+        side: "buy",
+        price: 10,
+        quantity: 5,
+      }),
+    });
+
+    expect(second.status).toBe(400);
+    await expect(second.json()).resolves.toMatchObject({
+      error: "insufficient_crowns",
+    });
+  });
+
   it("is disabled when dev routes are off", async () => {
     const server = createServer({ pool, enableDevRoutes: false });
     await new Promise<void>((resolve) => server.listen(0, resolve));
