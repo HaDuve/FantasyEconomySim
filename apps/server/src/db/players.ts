@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import type { Db, DbExecutor } from "./client.js";
+import type { DbExecutor } from "./client.js";
 import { players } from "./schema.js";
 
 export type Player = typeof players.$inferSelect;
@@ -22,7 +22,7 @@ export async function registerPlayer(
 }
 
 export async function getPlayerById(
-  db: Db,
+  db: DbExecutor,
   playerId: string,
 ): Promise<Player | undefined> {
   const [row] = await db
@@ -35,7 +35,7 @@ export async function getPlayerById(
 }
 
 export async function getPlayerByFirebaseUid(
-  db: Db,
+  db: DbExecutor,
   firebaseUid: string,
 ): Promise<Player | undefined> {
   const [row] = await db
