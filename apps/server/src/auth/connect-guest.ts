@@ -1,7 +1,7 @@
 import {
-  isProfessionId,
+  isStarterTrioProfessionId,
   STARTER_PACKAGE_CROWNS,
-  type ProfessionId,
+  type StarterTrioProfessionId,
 } from "@fantasy-economy-sim/domain";
 import type { InventorySnapshot } from "@fantasy-economy-sim/domain";
 import { eq } from "drizzle-orm";
@@ -24,11 +24,11 @@ export class ProfessionRequiredError extends Error {
 
 export type ConnectGuestInput = {
   idToken: string;
-  profession?: ProfessionId;
+  profession?: StarterTrioProfessionId;
 };
 
 export type ConnectGuestWorker = {
-  profession: ProfessionId;
+  profession: StarterTrioProfessionId;
 };
 
 export type ConnectGuestResult = {
@@ -52,7 +52,7 @@ async function loadConnectGuestResult(
     crowns: wallet?.crowns ?? 0,
     inventory: await getInventory(db, playerId),
     workers: workerRows.map((worker) => ({
-      profession: worker.professionId as ProfessionId,
+      profession: worker.professionId as StarterTrioProfessionId,
     })),
     starterPackageGranted,
   };
@@ -61,7 +61,7 @@ async function loadConnectGuestResult(
 async function grantStarterPackage(
   db: DbExecutor,
   playerId: string,
-  profession: ProfessionId,
+  profession: StarterTrioProfessionId,
 ): Promise<void> {
   await setWalletCrowns(db, playerId, STARTER_PACKAGE_CROWNS);
   await hireWorker(db, playerId, profession);
@@ -74,7 +74,7 @@ async function grantStarterPackage(
 async function ensureStarterPackageGranted(
   tx: DbExecutor,
   uid: string,
-  profession: ProfessionId,
+  profession: StarterTrioProfessionId,
 ): Promise<ConnectGuestResult> {
   const player = await ensurePlayerByFirebaseUid(tx, uid);
 
@@ -115,7 +115,7 @@ export async function connectGuest(
   }
 
   if (existing && !existing.starterPackageGranted) {
-    if (!input.profession || !isProfessionId(input.profession)) {
+    if (!input.profession || !isStarterTrioProfessionId(input.profession)) {
       return loadConnectGuestResult(db, existing.id, false);
     }
 
@@ -124,7 +124,7 @@ export async function connectGuest(
     );
   }
 
-  if (!input.profession || !isProfessionId(input.profession)) {
+  if (!input.profession || !isStarterTrioProfessionId(input.profession)) {
     throw new ProfessionRequiredError();
   }
 

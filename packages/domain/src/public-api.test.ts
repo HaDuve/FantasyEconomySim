@@ -28,8 +28,9 @@ describe("public API", () => {
     };
     const setAssignment: SetAssignmentCommand = {
       kind: "set_assignment",
+      workerId: "worker-1",
+      assignmentId: "mine_ore",
       buildingId: "mine-1",
-      assignmentId: "mine-ore",
     };
 
     expect(placeOrder.kind).toBe("place_order");

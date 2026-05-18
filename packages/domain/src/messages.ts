@@ -31,12 +31,20 @@ export type PoolBuyCommand = {
 
 export type SetAssignmentCommand = {
   kind: "set_assignment";
-  buildingId: string;
+  workerId: string;
   assignmentId: string;
+  /** Required for **bound worker** **assignments**; omit for **field work**. */
+  buildingId?: string;
+};
+
+export type PurchasePrivateBuildingCommand = {
+  kind: "purchase_private_building";
+  buildingTypeId: string;
 };
 
 export type ClientCommand =
   | PlaceOrderCommand
   | CancelOrderCommand
   | PoolBuyCommand
-  | SetAssignmentCommand;
+  | SetAssignmentCommand
+  | PurchasePrivateBuildingCommand;

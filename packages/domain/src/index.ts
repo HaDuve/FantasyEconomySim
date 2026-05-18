@@ -20,11 +20,39 @@ export {
   type SupplyPoolSnapshot,
 } from "./supply-pool.js";
 export {
+  ASSIGNMENT_DEFINITIONS,
+  ASSIGNMENT_IDS,
+  getAssignmentDefinition,
+  isAssignmentId,
+  type AssignmentDefinition,
+  type AssignmentId,
+} from "./assignments.js";
+export {
+  PRIVATE_BUILDING_COSTS,
+  PRIVATE_BUILDING_TYPE_IDS,
+  PUBLIC_BUILDING_FACILITY_FEES,
+  PUBLIC_BUILDING_TYPE_IDS,
+  getPrivateBuildingCost,
+  isPrivateBuildingTypeId,
+  isPublicBuildingTypeId,
+  type BuildingTypeId,
+  type PrivateBuildingTypeId,
+  type PublicBuildingTypeId,
+} from "./buildings.js";
+export { WORKER_UPKEEP_PER_TICK } from "./economy.js";
+export {
   STARTER_TRIO_PROFESSION_IDS,
+  PROFESSION_IDS,
   isProfessionId,
+  isStarterTrioProfessionId,
   type ProfessionId,
   type StarterTrioProfessionId,
 } from "./professions.js";
+export {
+  applyAssignmentYield,
+  applyAssignmentYieldToInventory,
+  type AssignmentYieldDelta,
+} from "./production.js";
 export { STARTER_PACKAGE_CROWNS } from "./starter-package.js";
 export {
   CONVERSION_RECIPES,
@@ -38,6 +66,7 @@ export type {
   InventorySnapshot,
   PlaceOrderCommand,
   PoolBuyCommand,
+  PurchasePrivateBuildingCommand,
   SetAssignmentCommand,
   TickBroadcast,
 } from "./messages.js";

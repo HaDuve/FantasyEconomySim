@@ -12,6 +12,15 @@ describe("rowsToInventorySnapshot", () => {
     ).toEqual({ grain: 3, ore: 1 });
   });
 
+  it("omits zero-quantity rows from the snapshot", () => {
+    expect(
+      rowsToInventorySnapshot([
+        { resourceId: "ore", quantity: 0 },
+        { resourceId: "ingots", quantity: 1 },
+      ]),
+    ).toEqual({ ingots: 1 });
+  });
+
   it("omits unknown resource ids and notifies via callback", () => {
     const onUnknownResourceId = vi.fn();
 

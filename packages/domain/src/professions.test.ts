@@ -13,8 +13,12 @@ describe("starter trio", () => {
     ]);
   });
 
-  it("limits ProfessionId to the starter trio in v1", () => {
-    const professions: ProfessionId[] = [...STARTER_TRIO_PROFESSION_IDS];
+  it("includes production professions beyond the starter trio", () => {
+    const professions: ProfessionId[] = [
+      "hunter",
+      "smith",
+      "scholar",
+    ];
     expect(professions).toHaveLength(3);
   });
 });

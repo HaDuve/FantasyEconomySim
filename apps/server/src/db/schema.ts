@@ -7,6 +7,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -35,7 +36,7 @@ export const workers = pgTable(
   (table) => [
     check(
       "workers_profession_id_valid",
-      sql`${table.professionId} in ('hunter', 'miner', 'herbalist')`,
+      sql`${table.professionId} in ('hunter', 'miner', 'herbalist', 'miller', 'sawyer', 'smith', 'alchemist', 'scholar')`,
     ),
   ],
 );
@@ -132,6 +133,56 @@ export const supplyPool = pgTable(
       "supply_pool_resource_id_valid",
       sql`${table.resourceId} in ('grain', 'game', 'lumber', 'ore', 'herbs')`,
     ),
+  ],
+);
+
+/** **Private building** owned by one **player** (CONTEXT). */
+export const privateBuildings = pgTable(
+  "private_buildings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => players.id, { onDelete: "cascade" }),
+    buildingTypeId: text("building_type_id").notNull(),
+  },
+  (table) => [
+    check(
+      "private_buildings_type_valid",
+      sql`${table.buildingTypeId} in ('herbalist_shop', 'mine', 'mill', 'sawmill', 'smithy', 'alchemy')`,
+    ),
+  ],
+);
+
+/** Active **assignment** for a **worker** (CONTEXT). */
+export const workerAssignments = pgTable(
+  "worker_assignments",
+  {
+    workerId: uuid("worker_id")
+      .primaryKey()
+      .references(() => workers.id, { onDelete: "cascade" }),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => players.id, { onDelete: "cascade" }),
+    assignmentId: text("assignment_id").notNull(),
+    privateBuildingId: uuid("private_building_id").references(
+      () => privateBuildings.id,
+      { onDelete: "cascade" },
+    ),
+    publicBuildingTypeId: text("public_building_type_id"),
+  },
+  (table) => [
+    check(
+      "worker_assignments_assignment_id_valid",
+      sql`${table.assignmentId} in ('hunt_game', 'mine_ore', 'gather_herbs', 'mill_grain', 'saw_lumber', 'smith_ingots', 'brew_potions', 'scribe_scrolls')`,
+    ),
+    check(
+      "worker_assignments_public_building_type_valid",
+      sql`${table.publicBuildingTypeId} is null or ${table.publicBuildingTypeId} in ('magic_school')`,
+    ),
+    uniqueIndex("worker_assignments_public_seat_cap")
+      .on(table.playerId, table.publicBuildingTypeId)
+      .where(sql`${table.publicBuildingTypeId} is not null`),
   ],
 );
 

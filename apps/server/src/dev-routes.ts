@@ -12,6 +12,15 @@ import { getPlayerById } from "./db/players.js";
 import { isMarketError } from "./market/errors.js";
 import { cancelOrder, placeOrder, type PlaceOrderInput } from "./market/orders.js";
 import { poolBuy, runGlobalTick } from "./market/supply-pool.js";
+import { setAssignment } from "./production/assignments.js";
+import { purchasePrivateBuilding } from "./production/buildings.js";
+import { isProductionError } from "./production/errors.js";
+import {
+  isAssignmentId,
+  isPrivateBuildingTypeId,
+  type AssignmentId,
+  type PrivateBuildingTypeId,
+} from "@fantasy-economy-sim/domain";
 
 type DevCreateBody = {
   firebaseUid?: string | null;
@@ -156,12 +165,58 @@ function isPlaceOrderBody(value: unknown): value is PlaceOrderInput {
 }
 
 function sendMarketError(response: ServerResponse, error: unknown): void {
-  if (isMarketError(error)) {
+  if (isMarketError(error) || isProductionError(error)) {
     sendJson(response, 400, { error: error.code, message: error.message });
     return;
   }
 
   sendJson(response, 500, { error: "internal_error" });
+}
+
+type PurchaseBuildingBody = {
+  buildingTypeId: PrivateBuildingTypeId;
+};
+
+type SetAssignmentBody = {
+  workerId: string;
+  assignmentId: AssignmentId;
+  buildingId?: string;
+};
+
+function isPurchaseBuildingBody(value: unknown): value is PurchaseBuildingBody {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const body = value as PurchaseBuildingBody;
+
+  return isPrivateBuildingTypeId(body.buildingTypeId);
+}
+
+function isSetAssignmentBody(value: unknown): value is SetAssignmentBody {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const body = value as SetAssignmentBody;
+
+  return (
+    typeof body.workerId === "string" &&
+    isAssignmentId(body.assignmentId) &&
+    (body.buildingId === undefined || typeof body.buildingId === "string")
+  );
+}
+
+function parsePrivateBuildingsPlayerId(url: string): string | undefined {
+  const match = /^\/dev\/players\/([^/]+)\/private-buildings$/.exec(url);
+
+  return match?.[1];
+}
+
+function parseAssignmentsPlayerId(url: string): string | undefined {
+  const match = /^\/dev\/players\/([^/]+)\/assignments$/.exec(url);
+
+  return match?.[1];
 }
 
 export async function handleDevRoute(
@@ -190,6 +245,70 @@ export async function handleDevRoute(
   }
 
   if (method === "POST") {
+    const privateBuildingsPlayerId = parsePrivateBuildingsPlayerId(url);
+
+    if (privateBuildingsPlayerId) {
+      try {
+        const player = await getPlayerById(db, privateBuildingsPlayerId);
+
+        if (!player) {
+          sendJson(response, 404, { error: "not_found" });
+          return true;
+        }
+
+        const body = await readJsonBody(request);
+
+        if (!isPurchaseBuildingBody(body)) {
+          sendJson(response, 400, { error: "invalid_body" });
+          return true;
+        }
+
+        const building = await purchasePrivateBuilding(
+          db,
+          privateBuildingsPlayerId,
+          body.buildingTypeId,
+        );
+        sendJson(response, 201, { building });
+      } catch (error) {
+        sendMarketError(response, error);
+      }
+
+      return true;
+    }
+
+    const assignmentsPlayerId = parseAssignmentsPlayerId(url);
+
+    if (assignmentsPlayerId) {
+      try {
+        const player = await getPlayerById(db, assignmentsPlayerId);
+
+        if (!player) {
+          sendJson(response, 404, { error: "not_found" });
+          return true;
+        }
+
+        const body = await readJsonBody(request);
+
+        if (!isSetAssignmentBody(body)) {
+          sendJson(response, 400, { error: "invalid_body" });
+          return true;
+        }
+
+        const assignment = await setAssignment(
+          db,
+          assignmentsPlayerId,
+          body.workerId,
+          body.assignmentId,
+          body.buildingId,
+        );
+        sendJson(response, 200, { assignment });
+      } catch (error) {
+        sendMarketError(response, error);
+      }
+
+      return true;
+    }
+
     const poolBuyPlayerId = parsePoolBuyPlayerId(url);
 
     if (poolBuyPlayerId) {

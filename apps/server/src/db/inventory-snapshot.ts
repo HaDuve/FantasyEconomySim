@@ -23,6 +23,10 @@ export function rowsToInventorySnapshot(
   const snapshot: InventorySnapshot = {};
 
   for (const row of rows) {
+    if (row.quantity <= 0) {
+      continue;
+    }
+
     if (isResourceId(row.resourceId)) {
       snapshot[row.resourceId] = row.quantity;
     } else {

@@ -123,6 +123,14 @@ _Avoid_: `gold` as currency name (use **crown**). _Avoid_: treating **crown** as
 
 _Higher-tier buildings cost more; exact table subject to **numeric tuning**._
 
+### Production tuning (v1)
+
+| Knob | Value (v1) | Notes |
+| ---- | ---------- | ----- |
+| **upkeep** | 5 **crowns** / employed **worker** / **global tick** | Full **upkeep** per **worker** while **wallet** can pay; otherwise that **worker**'s **upkeep** is skipped for the tick |
+| **facility fee** (Magic School) | 15 **crowns** / **global tick** | Debited when a **public building** **assignment** runs; held seat with insufficient inputs still pays the fee |
+| **assignment** yield | 1 unit / **global tick** | Simple **assignments** and **conversions** (see recipes above) |
+
 **Starter trio** (pick one at onboarding):
 
 | Profession | Type             | First step                                            |
@@ -185,7 +193,7 @@ Military / advantage layer from brainstorming — see `docs/brainstorming/cursor
 
 ## Flagged ambiguities
 
-- **Numeric tuning** — exact **world drip**, **pool price**, and yield tables per tier (TBD).
+- **Numeric tuning** — **world drip**, **pool price**, and tier yield tables beyond production knobs above (TBD).
 - **Military layer** — global vs per-player **monster pressure**; equipment loss on fail (TBD).
 
 ## Conventions
