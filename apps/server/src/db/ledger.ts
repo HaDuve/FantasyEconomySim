@@ -82,6 +82,36 @@ export async function setWalletCrowns(
   return row;
 }
 
+export async function lockWalletForUpdate(
+  db: DbExecutor,
+  playerId: string,
+): Promise<void> {
+  await db
+    .select()
+    .from(wallets)
+    .where(eq(wallets.playerId, playerId))
+    .for("update")
+    .limit(1);
+}
+
+export async function lockInventoryForUpdate(
+  db: DbExecutor,
+  playerId: string,
+  resourceId: ResourceId,
+): Promise<void> {
+  await db
+    .select()
+    .from(inventory)
+    .where(
+      and(
+        eq(inventory.playerId, playerId),
+        eq(inventory.resourceId, resourceId),
+      ),
+    )
+    .for("update")
+    .limit(1);
+}
+
 export async function getWallet(
   db: DbExecutor,
   playerId: string,

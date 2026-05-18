@@ -162,6 +162,46 @@ describe("dev routes", () => {
     });
   });
 
+  it("rejects over-committed sell via POST /dev/players/:id/orders", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        crowns: 0,
+        inventory: { grain: 10 },
+      }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    const first = await fetch(`${baseUrl}/dev/players/${playerId}/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resourceId: "grain",
+        side: "sell",
+        price: 5,
+        quantity: 6,
+      }),
+    });
+    expect(first.status).toBe(201);
+
+    const second = await fetch(`${baseUrl}/dev/players/${playerId}/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resourceId: "grain",
+        side: "sell",
+        price: 5,
+        quantity: 5,
+      }),
+    });
+
+    expect(second.status).toBe(400);
+    await expect(second.json()).resolves.toMatchObject({
+      error: "insufficient_inventory",
+    });
+  });
+
   it("rejects over-committed buy via POST /dev/players/:id/orders", async () => {
     const created = await fetch(`${baseUrl}/dev/players`, {
       method: "POST",

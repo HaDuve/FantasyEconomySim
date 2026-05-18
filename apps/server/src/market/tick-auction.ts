@@ -18,6 +18,10 @@ import { orders, settlements } from "../db/schema.js";
 import type { OpenOrder } from "./orders.js";
 import { rowToOpenOrder } from "./orders.js";
 
+function orderPairKey(buyOrderId: string, sellOrderId: string): string {
+  return `${buyOrderId}:${sellOrderId}`;
+}
+
 export type TickAuctionResult = {
   fillsApplied: number;
   fillsSkipped: number;
@@ -117,6 +121,7 @@ async function runResourceTickAuction(
 ): Promise<{ fillsApplied: number; fillsSkipped: number }> {
   let fillsApplied = 0;
   let fillsSkipped = 0;
+  const blockedPairs = new Set<string>();
 
   while (true) {
     const resourceOrders = (await listOpenOrders(tx)).filter(
@@ -133,7 +138,7 @@ async function runResourceTickAuction(
     const asks = resourceOrders
       .filter((order) => order.side === "sell")
       .map(toLimitOrder);
-    const { fills } = match(resourceId, bids, asks);
+    const { fills } = match(resourceId, bids, asks, { blockedPairs });
 
     if (fills.length === 0) {
       break;
@@ -149,7 +154,8 @@ async function runResourceTickAuction(
 
     if (!(await canSettleFill(tx, resourceId, fill, buyOrder, sellOrder))) {
       fillsSkipped += 1;
-      break;
+      blockedPairs.add(orderPairKey(fill.buyOrderId, fill.sellOrderId));
+      continue;
     }
 
     await applyFill(tx, resourceId, fill, buyOrder, sellOrder);

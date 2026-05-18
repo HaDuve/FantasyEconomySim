@@ -20,10 +20,20 @@ export type MatchResult = {
   remainingAsks: LimitOrder[];
 };
 
+export type MatchOptions = {
+  /** `${buyOrderId}:${sellOrderId}` pairs that must not cross in this pass. */
+  blockedPairs?: ReadonlySet<string>;
+};
+
+function orderPairKey(buyOrderId: string, sellOrderId: string): string {
+  return `${buyOrderId}:${sellOrderId}`;
+}
+
 export function match(
   resource: ResourceId,
   bids: LimitOrder[],
   asks: LimitOrder[],
+  options: MatchOptions = {},
 ): MatchResult {
   assertTradeableResource(resource);
   for (const bid of bids) {
@@ -46,6 +56,11 @@ export function match(
 
     if (bid.price < ask.price) {
       break;
+    }
+
+    if (options.blockedPairs?.has(orderPairKey(bid.orderId, ask.orderId))) {
+      bidIndex += 1;
+      continue;
     }
 
     const quantity = Math.min(bid.quantity, ask.quantity);
@@ -71,8 +86,8 @@ export function match(
 
   return {
     fills,
-    remainingBids: remainingBids.slice(bidIndex).filter((order) => order.quantity > 0),
-    remainingAsks: remainingAsks.slice(askIndex).filter((order) => order.quantity > 0),
+    remainingBids: remainingBids.filter((order) => order.quantity > 0),
+    remainingAsks: remainingAsks.filter((order) => order.quantity > 0),
   };
 }
 

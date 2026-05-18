@@ -2,8 +2,13 @@ import type { ResourceId } from "@fantasy-economy-sim/domain";
 import { isResourceId } from "@fantasy-economy-sim/domain";
 import { and, eq, gt, sql } from "drizzle-orm";
 
-import type { DbExecutor } from "../db/client.js";
-import { getInventoryQuantity, getWallet } from "../db/ledger.js";
+import type { Db, DbExecutor } from "../db/client.js";
+import {
+  getInventoryQuantity,
+  getWallet,
+  lockInventoryForUpdate,
+  lockWalletForUpdate,
+} from "../db/ledger.js";
 import { orders } from "../db/schema.js";
 import {
   InsufficientCrownsError,
@@ -108,25 +113,35 @@ async function sumOpenSellQuantity(
 }
 
 export async function placeOrder(
-  db: DbExecutor,
+  db: Db,
+  playerId: string,
+  input: PlaceOrderInput,
+): Promise<OpenOrder> {
+  return db.transaction((tx) => placeOrderInTransaction(tx, playerId, input));
+}
+
+async function placeOrderInTransaction(
+  tx: DbExecutor,
   playerId: string,
   input: PlaceOrderInput,
 ): Promise<OpenOrder> {
   assertPlaceOrderInput(input);
 
   if (input.side === "buy") {
-    const wallet = await getWallet(db, playerId);
+    await lockWalletForUpdate(tx, playerId);
+    const wallet = await getWallet(tx, playerId);
     const crowns = wallet?.crowns ?? 0;
-    const openNotional = await sumOpenBuyNotional(db, playerId);
+    const openNotional = await sumOpenBuyNotional(tx, playerId);
     const required = input.price * input.quantity;
 
     if (openNotional + required > crowns) {
       throw new InsufficientCrownsError();
     }
   } else {
-    const held = await getInventoryQuantity(db, playerId, input.resourceId);
+    await lockInventoryForUpdate(tx, playerId, input.resourceId);
+    const held = await getInventoryQuantity(tx, playerId, input.resourceId);
     const openQuantity = await sumOpenSellQuantity(
-      db,
+      tx,
       playerId,
       input.resourceId,
     );
@@ -136,7 +151,7 @@ export async function placeOrder(
     }
   }
 
-  const [row] = await db
+  const [row] = await tx
     .insert(orders)
     .values({
       playerId,
