@@ -1,8 +1,11 @@
 import { Pool } from "pg";
 
 import { createDb } from "./db/client.js";
+import { loadRepoEnv } from "./db/env.js";
 import { runMigrations } from "./db/migrate.js";
 import { createServer } from "./server.js";
+
+loadRepoEnv();
 
 const databaseUrl = process.env.DATABASE_URL;
 

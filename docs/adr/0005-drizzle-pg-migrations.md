@@ -6,9 +6,13 @@
 
 **Layout:** root `compose.yml` (Postgres 16); `apps/server/drizzle.config.ts`, `src/db/schema.ts`, `drizzle/*.sql`, `drizzle/down/*.down.sql`.
 
-**Migrations (up):** edit schema → `pnpm --filter @fantasy-economy-sim/server db:generate` → review SQL → `db:migrate`. No `drizzle-kit push` on merged work.
+**Local Postgres:** `compose.yml` maps host **5433** → container 5432 (`fes` / `fes` / `fes_dev`). Default 5432 is avoided so dev machines with another Postgres install can run both. `DATABASE_URL` in repo-root `.env` must use port 5433.
 
-**Migrations (down):** default dev reset — `docker compose down -v`, `docker compose up -d`, `db:migrate`. For non-trivial changes, add a paired script under `drizzle/down/` and run `db:migrate:down -- <file>`. `drizzle-kit`, `db:migrate`, and `db:migrate:down` all load repo-root `.env` via `src/db/env.ts` (`cp .env.example .env` first). Drizzle native rollback is not released yet ([drizzle-orm#2352](https://github.com/drizzle-team/drizzle-orm/issues/2352)).
+**Env loading:** `src/db/env.ts` (`loadRepoEnv`) loads repo-root `.env` for `drizzle.config.ts`, `db:migrate:down`, and `pnpm dev:server` (`src/index.ts`). Dotenv does not override variables already set in the shell — unset a stale `DATABASE_URL` if migrations hit the wrong host.
+
+**Migrations (up):** edit schema → `pnpm --filter @fantasy-economy-sim/server db:generate` → review SQL → `db:migrate`. No `drizzle-kit push` on merged work. `pnpm dev:server` runs migrations on startup.
+
+**Migrations (down):** default dev reset — `docker compose down -v`, `pnpm db:up`, `db:migrate`. For non-trivial changes, add a paired script under `drizzle/down/` and run `db:migrate:down -- <file>`. Drizzle native rollback is not released yet ([drizzle-orm#2352](https://github.com/drizzle-team/drizzle-orm/issues/2352)).
 
 **Tests:** `pnpm test` (unit only). `pnpm test:integration` requires a Docker engine (Testcontainers; fails fast if unavailable). CI runs both. Local Postgres hacking uses `compose.yml`.
 

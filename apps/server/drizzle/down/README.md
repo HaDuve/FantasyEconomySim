@@ -13,8 +13,8 @@ pnpm --filter @fantasy-economy-sim/server db:migrate:down -- apps/server/drizzle
 For day-to-day dev, prefer resetting the database:
 
 ```bash
-docker compose down -v && docker compose up -d
-pnpm --filter @fantasy-economy-sim/server db:migrate
+docker compose down -v && pnpm db:up
+pnpm db:migrate
 ```
 
 See [ADR-0005](../../../docs/adr/0005-drizzle-pg-migrations.md).
