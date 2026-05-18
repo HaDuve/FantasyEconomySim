@@ -265,7 +265,7 @@ describe("production", () => {
 
     await setAssignment(db, playerId, hunter.id, "hunt_game");
 
-    const result = await runGlobalTick(db);
+    const result = await runGlobalTick(pool);
 
     expect(result.assignmentsRun).toBe(1);
     expect(await getInventory(db, playerId)).toEqual({ game: 1 });

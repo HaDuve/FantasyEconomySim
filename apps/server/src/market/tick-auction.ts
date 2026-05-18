@@ -63,6 +63,7 @@ function canSettleFill(
 
 async function applyFill(
   db: DbExecutor,
+  tickId: number,
   resourceId: ResourceId,
   fill: Fill,
   buyOrder: OpenOrder,
@@ -97,6 +98,7 @@ async function applyFill(
   );
 
   await db.insert(settlements).values({
+    tickId,
     resourceId,
     price: fill.price,
     quantity: fill.quantity,
@@ -117,6 +119,7 @@ async function syncOrderQuantity(
 
 async function runResourceTickAuction(
   tx: DbExecutor,
+  tickId: number,
   resourceId: ResourceId,
 ): Promise<{ fillsApplied: number; fillsSkipped: number }> {
   let fillsApplied = 0;
@@ -158,7 +161,7 @@ async function runResourceTickAuction(
       continue;
     }
 
-    await applyFill(tx, resourceId, fill, buyOrder, sellOrder);
+    await applyFill(tx, tickId, resourceId, fill, buyOrder, sellOrder);
     fillsApplied += 1;
 
     const buyRemaining = buyOrder.quantity - fill.quantity;
@@ -171,13 +174,16 @@ async function runResourceTickAuction(
   return { fillsApplied, fillsSkipped };
 }
 
-export async function runTickAuction(db: Db): Promise<TickAuctionResult> {
+export async function runTickAuction(
+  db: Db,
+  tickId: number,
+): Promise<TickAuctionResult> {
   return db.transaction(async (tx) => {
     let fillsApplied = 0;
     let fillsSkipped = 0;
 
     for (const resourceId of RESOURCE_IDS) {
-      const result = await runResourceTickAuction(tx, resourceId);
+      const result = await runResourceTickAuction(tx, tickId, resourceId);
       fillsApplied += result.fillsApplied;
       fillsSkipped += result.fillsSkipped;
     }

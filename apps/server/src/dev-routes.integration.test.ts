@@ -157,6 +157,7 @@ describe("dev routes", () => {
 
     expect(tick.status).toBe(200);
     await expect(tick.json()).resolves.toEqual({
+      tickId: 1,
       assignmentsRun: 0,
       assignmentsSkipped: 0,
       upkeepCharged: 0,
@@ -211,6 +212,7 @@ describe("dev routes", () => {
 
     expect(auction.status).toBe(200);
     await expect(auction.json()).resolves.toEqual({
+      tickId: 2,
       assignmentsRun: 0,
       assignmentsSkipped: 0,
       upkeepCharged: 0,

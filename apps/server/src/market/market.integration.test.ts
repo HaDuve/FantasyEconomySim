@@ -5,7 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "../db/client.js";
 import { createPlayerWithLedger } from "../db/ledger.js";
 import { runMigrations } from "../db/migrate.js";
-import { orders, settlements } from "../db/schema.js";
+import { globalTicks, orders, settlements } from "../db/schema.js";
 import { getInventory, getWallet, setWalletCrowns } from "../db/ledger.js";
 import { InsufficientCrownsError, InsufficientInventoryError } from "./errors.js";
 import { cancelOrder, getOpenOrder, placeOrder } from "./orders.js";
@@ -30,7 +30,21 @@ describe("market", () => {
     const db = createDb(pool);
     await db.delete(settlements);
     await db.delete(orders);
+    await db.delete(globalTicks);
   });
+
+  async function seedAuctionTickId(db: ReturnType<typeof createDb>): Promise<number> {
+    const [row] = await db
+      .insert(globalTicks)
+      .values({ status: "running" })
+      .returning({ tickId: globalTicks.tickId });
+
+    if (!row) {
+      throw new Error("Failed to seed auction tick id");
+    }
+
+    return row.tickId;
+  }
 
   it("persists a GTC buy limit order with price, quantity, and timestamp", async () => {
     const db = createDb(pool);
@@ -151,7 +165,8 @@ describe("market", () => {
       quantity: 10,
     });
 
-    const { fillsApplied, fillsSkipped } = await runTickAuction(db);
+    const tickId = await seedAuctionTickId(db);
+    const { fillsApplied, fillsSkipped } = await runTickAuction(db, tickId);
 
     expect(fillsSkipped).toBe(1);
     expect(fillsApplied).toBe(1);
@@ -182,7 +197,8 @@ describe("market", () => {
       quantity: 4,
     });
 
-    const { fillsApplied } = await runTickAuction(db);
+    const tickId = await seedAuctionTickId(db);
+    const { fillsApplied } = await runTickAuction(db, tickId);
 
     expect(fillsApplied).toBe(1);
     expect((await getWallet(db, buyer.playerId))?.crowns).toBe(80);

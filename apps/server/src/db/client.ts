@@ -2,7 +2,7 @@ import type { ExtractTablesWithRelations } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
 import type { PgTransaction } from "drizzle-orm/pg-core";
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 
 import * as schema from "./schema.js";
 
@@ -25,4 +25,9 @@ export function createDb(connectionStringOrPool: string | Pool) {
       : connectionStringOrPool;
 
   return drizzle({ client: pool, schema });
+}
+
+/** Drizzle bound to one pool client — use for session-scoped work (e.g. advisory locks). */
+export function createDbFromClient(client: PoolClient) {
+  return drizzle({ client, schema });
 }

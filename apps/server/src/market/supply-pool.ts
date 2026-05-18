@@ -24,10 +24,11 @@ import {
   InsufficientCrownsError,
   NotPoolResourceError,
 } from "./errors.js";
-import { runProductionTick, type ProductionTickResult } from "../production/tick-production.js";
-import { runTickAuction, type TickAuctionResult } from "./tick-auction.js";
+import type { TickEngineResult } from "../tick/tick-engine.js";
 
-export type GlobalTickResult = ProductionTickResult & TickAuctionResult;
+export type GlobalTickResult = TickEngineResult;
+
+export { runGlobalTick } from "../tick/tick-engine.js";
 
 function rowsToSupplyPoolSnapshot(
   rows: (typeof supplyPool.$inferSelect)[],
@@ -129,11 +130,3 @@ export async function poolBuy(
   });
 }
 
-/** Manual **global tick** path: **world drip** → **production** → **tick auction**. */
-export async function runGlobalTick(db: Db): Promise<GlobalTickResult> {
-  await runWorldDrip(db);
-  const production = await runProductionTick(db);
-  const auction = await runTickAuction(db);
-
-  return { ...production, ...auction };
-}
