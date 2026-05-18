@@ -6,9 +6,13 @@ import { config } from "dotenv";
 /** Repo-root `.env` (same path used by `drizzle.config.ts` and `db:migrate:down`). */
 export const repoEnvPath = path.join(
   fileURLToPath(new URL(".", import.meta.url)),
-  "../../../.env",
+  "../../../../.env",
 );
 
+export function loadEnvFromPath(envPath: string): void {
+  config({ path: envPath });
+}
+
 export function loadRepoEnv(): void {
-  config({ path: repoEnvPath });
+  loadEnvFromPath(repoEnvPath);
 }
