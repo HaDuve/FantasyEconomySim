@@ -116,6 +116,25 @@ export const settlements = pgTable(
   ],
 );
 
+/** World **supply pool** stock for tier 1–2 **resources** (CONTEXT). */
+export const supplyPool = pgTable(
+  "supply_pool",
+  {
+    resourceId: text("resource_id").primaryKey(),
+    quantity: integer("quantity").notNull().default(0),
+  },
+  (table) => [
+    check(
+      "supply_pool_quantity_non_negative",
+      sql`${table.quantity} >= 0`,
+    ),
+    check(
+      "supply_pool_resource_id_valid",
+      sql`${table.resourceId} in ('grain', 'game', 'lumber', 'ore', 'herbs')`,
+    ),
+  ],
+);
+
 /** **Resource** quantities held in a player's **inventory**. */
 export const inventory = pgTable(
   "inventory",

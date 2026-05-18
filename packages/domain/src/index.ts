@@ -10,6 +10,16 @@ export {
   type ResourceId,
 } from "./resources.js";
 export {
+  applyWorldDrip,
+  getPoolPrice,
+  isPoolResourceId,
+  POOL_PRICES,
+  POOL_RESOURCE_IDS,
+  WORLD_DRIP_PER_TICK,
+  type PoolResourceId,
+  type SupplyPoolSnapshot,
+} from "./supply-pool.js";
+export {
   STARTER_TRIO_PROFESSION_IDS,
   isProfessionId,
   type ProfessionId,

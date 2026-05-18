@@ -112,7 +112,57 @@ describe("dev routes", () => {
     }
   });
 
-  it("runs tick auction via POST /dev/market/tick-auction", async () => {
+  it("runs global tick via POST /dev/market/global-tick", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        crowns: 120,
+        inventory: { grain: 20 },
+      }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    const buyer = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ crowns: 120 }),
+    });
+    const { playerId: buyerId } = (await buyer.json()) as { playerId: string };
+
+    await fetch(`${baseUrl}/dev/players/${buyerId}/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resourceId: "grain",
+        side: "buy",
+        price: 12,
+        quantity: 10,
+      }),
+    });
+    await fetch(`${baseUrl}/dev/players/${playerId}/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resourceId: "grain",
+        side: "sell",
+        price: 10,
+        quantity: 4,
+      }),
+    });
+
+    const tick = await fetch(`${baseUrl}/dev/market/global-tick`, {
+      method: "POST",
+    });
+
+    expect(tick.status).toBe(200);
+    await expect(tick.json()).resolves.toEqual({
+      fillsApplied: 1,
+      fillsSkipped: 0,
+    });
+  });
+
+  it("runs global tick via legacy POST /dev/market/tick-auction", async () => {
     const created = await fetch(`${baseUrl}/dev/players`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -159,6 +209,55 @@ describe("dev routes", () => {
     await expect(auction.json()).resolves.toEqual({
       fillsApplied: 1,
       fillsSkipped: 0,
+    });
+  });
+
+  it("pool buy via POST /dev/players/:id/pool-buy", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ crowns: 100 }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    await fetch(`${baseUrl}/dev/market/global-tick`, { method: "POST" });
+
+    const buy = await fetch(`${baseUrl}/dev/players/${playerId}/pool-buy`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ resourceId: "grain", quantity: 2 }),
+    });
+
+    expect(buy.status).toBe(200);
+    await expect(buy.json()).resolves.toEqual({
+      resourceId: "grain",
+      quantity: 2,
+    });
+
+    const ledger = await fetch(`${baseUrl}/dev/players/${playerId}/ledger`);
+    await expect(ledger.json()).resolves.toMatchObject({
+      crowns: 94,
+      inventory: { grain: 2 },
+    });
+  });
+
+  it("rejects invalid pool buy body via POST /dev/players/:id/pool-buy", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ crowns: 100 }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    const response = await fetch(`${baseUrl}/dev/players/${playerId}/pool-buy`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ resourceId: "ingots", quantity: 1 }),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "not_pool_resource",
     });
   });
 

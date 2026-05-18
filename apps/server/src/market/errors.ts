@@ -29,6 +29,20 @@ export class OrderNotFoundError extends MarketError {
   }
 }
 
+export class EmptySupplyPoolError extends MarketError {
+  constructor(message = "Supply pool has insufficient stock") {
+    super("empty_supply_pool", message);
+    this.name = "EmptySupplyPoolError";
+  }
+}
+
+export class NotPoolResourceError extends MarketError {
+  constructor(message = "Resource is not sold via the supply pool") {
+    super("not_pool_resource", message);
+    this.name = "NotPoolResourceError";
+  }
+}
+
 export function isMarketError(error: unknown): error is MarketError {
   return error instanceof MarketError;
 }

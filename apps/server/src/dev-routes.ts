@@ -11,7 +11,7 @@ import {
 import { getPlayerById } from "./db/players.js";
 import { isMarketError } from "./market/errors.js";
 import { cancelOrder, placeOrder, type PlaceOrderInput } from "./market/orders.js";
-import { runTickAuction } from "./market/tick-auction.js";
+import { poolBuy, runGlobalTick } from "./market/supply-pool.js";
 
 type DevCreateBody = {
   firebaseUid?: string | null;
@@ -63,6 +63,17 @@ function parseOrdersPlayerId(url: string): string | undefined {
   return match?.[1];
 }
 
+function parsePoolBuyPlayerId(url: string): string | undefined {
+  const match = /^\/dev\/players\/([^/]+)\/pool-buy$/.exec(url);
+
+  return match?.[1];
+}
+
+type PoolBuyBody = {
+  resourceId: ResourceId;
+  quantity: number;
+};
+
 function parseCancelOrderPath(
   url: string,
 ): { playerId: string; orderId: string } | undefined {
@@ -113,6 +124,20 @@ function isDevCreateBody(value: unknown): value is DevCreateBody {
   return true;
 }
 
+function isPoolBuyBody(value: unknown): value is PoolBuyBody {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const body = value as PoolBuyBody;
+
+  return (
+    isResourceId(body.resourceId) &&
+    Number.isInteger(body.quantity) &&
+    body.quantity > 0
+  );
+}
+
 function isPlaceOrderBody(value: unknown): value is PlaceOrderInput {
   if (typeof value !== "object" || value === null) {
     return false;
@@ -150,9 +175,12 @@ export async function handleDevRoute(
     return false;
   }
 
-  if (method === "POST" && url === "/dev/market/tick-auction") {
+  if (
+    method === "POST" &&
+    (url === "/dev/market/global-tick" || url === "/dev/market/tick-auction")
+  ) {
     try {
-      const result = await runTickAuction(db);
+      const result = await runGlobalTick(db);
       sendJson(response, 200, result);
     } catch (error) {
       sendMarketError(response, error);
@@ -162,6 +190,36 @@ export async function handleDevRoute(
   }
 
   if (method === "POST") {
+    const poolBuyPlayerId = parsePoolBuyPlayerId(url);
+
+    if (poolBuyPlayerId) {
+      try {
+        const player = await getPlayerById(db, poolBuyPlayerId);
+
+        if (!player) {
+          sendJson(response, 404, { error: "not_found" });
+          return true;
+        }
+
+        const body = await readJsonBody(request);
+
+        if (!isPoolBuyBody(body)) {
+          sendJson(response, 400, { error: "invalid_body" });
+          return true;
+        }
+
+        await poolBuy(db, poolBuyPlayerId, body.resourceId, body.quantity);
+        sendJson(response, 200, {
+          resourceId: body.resourceId,
+          quantity: body.quantity,
+        });
+      } catch (error) {
+        sendMarketError(response, error);
+      }
+
+      return true;
+    }
+
     const playerId = parseOrdersPlayerId(url);
 
     if (playerId) {
