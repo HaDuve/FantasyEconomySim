@@ -15,7 +15,7 @@ cp .env.example .env
 pnpm db:up
 ```
 
-This links workspace packages: `packages/domain`, `apps/server`, and `apps/mobile`. Local Postgres runs in Docker on host port **5433** (see [ADR-0005](./docs/adr/0005-drizzle-pg-migrations.md)) so it does not conflict with another Postgres on 5432.
+This links workspace packages: `packages/domain`, `apps/server`, and `apps/mobile`. Local Postgres runs in Docker on host port **5433** (see [ADR-0005](./docs/adr/0005-drizzle-pg-migrations.md)) so it does not conflict with another Postgres on 5432. If you already have a repo-root `.env` from an older setup, change `DATABASE_URL` to port **5433** and run `pnpm db:up` again.
 
 `pnpm dev:server` loads repo-root `.env` automatically. If you previously exported `DATABASE_URL` in your shell, run `unset DATABASE_URL` or open a fresh terminal so `.env` is not overridden.
 
