@@ -9,7 +9,7 @@ import {
   RESOURCE_IDS,
   toWalletCrowns,
 } from "@fantasy-economy-sim/domain";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import type { Db, DbExecutor } from "./client.js";
 import { rowsToInventorySnapshot } from "./inventory-snapshot.js";
@@ -131,4 +131,23 @@ export async function getInventory(
     .where(eq(inventory.playerId, playerId));
 
   return rowsToInventorySnapshot(rows);
+}
+
+export async function getInventoryQuantity(
+  db: DbExecutor,
+  playerId: string,
+  resourceId: ResourceId,
+): Promise<number> {
+  const [row] = await db
+    .select({ quantity: inventory.quantity })
+    .from(inventory)
+    .where(
+      and(
+        eq(inventory.playerId, playerId),
+        eq(inventory.resourceId, resourceId),
+      ),
+    )
+    .limit(1);
+
+  return row?.quantity ?? 0;
 }

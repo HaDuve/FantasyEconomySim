@@ -9,6 +9,7 @@ import {
   getWallet,
 } from "./db/ledger.js";
 import { getPlayerById } from "./db/players.js";
+import { runTickAuction } from "./market/tick-auction.js";
 
 type DevCreateBody = {
   firebaseUid?: string | null;
@@ -101,6 +102,17 @@ export async function handleDevRoute(
 
   if (!url?.startsWith("/dev/")) {
     return false;
+  }
+
+  if (method === "POST" && url === "/dev/market/tick-auction") {
+    try {
+      const result = await runTickAuction(db);
+      sendJson(response, 200, result);
+    } catch {
+      sendJson(response, 500, { error: "internal_error" });
+    }
+
+    return true;
   }
 
   if (method === "POST" && url === "/dev/players") {
