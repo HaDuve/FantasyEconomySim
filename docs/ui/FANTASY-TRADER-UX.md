@@ -41,15 +41,15 @@ flowchart LR
 
 **Navigation (post-onboarding):** sticky header on all main screens — Dashboard · Inventory · Marketplace · Production · Ledger. Header also shows **global tick** countdown (`tickId`, seconds remaining, progress bar) and notification affordance.
 
-| # | Screen | Route (suggested) | Primary intent |
-|---|--------|-------------------|----------------|
-| 1 | Welcome & profession selection | `/onboarding` | One-time **starter trio** pick + tick economy primer |
-| 2 | Main dashboard (tick overview) | `/` | **Wallet**, net worth, tick HUD, shortcuts, alerts |
-| 3 | Inventory & storage | `/inventory` | **Resource** quantities, valuation, reserve for production |
-| 4 | Resource marketplace | `/market` | All eight **resources** — price, volume, spread, drill-down |
-| 5 | Trade terminal | `/market/:resourceId` | **Order book**, chart, **order ticket**, open **orders** |
-| 6 | Production assignment | `/production` | **Workers**, **buildings**, **assignments**, **conversions** |
-| 7 | Historical ledger | `/ledger` | **Settlement** history by **tick** |
+| # | Screen | Route (suggested) | Slice | Primary intent |
+|---|--------|-------------------|-------|----------------|
+| 1 | Welcome & profession selection | `/onboarding` | [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12) | One-time **starter trio** pick + tick economy primer |
+| 2 | Main dashboard (tick overview) | `/` | [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12) minimal; [#1](https://github.com/HaDuve/FantasyEconomySim/issues/1) polish | **Wallet**, net worth, tick HUD, shortcuts, alerts |
+| 3 | Inventory & storage | `/inventory` | [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12) list; [#14](https://github.com/HaDuve/FantasyEconomySim/issues/14) reserve / **pool buy** | **Resource** quantities, valuation, reserve for production |
+| 4 | Resource marketplace | `/market` | [#13](https://github.com/HaDuve/FantasyEconomySim/issues/13) + [#14](https://github.com/HaDuve/FantasyEconomySim/issues/14) **pool buy** | All eight **resources** — price, volume, spread, drill-down |
+| 5 | Trade terminal | `/market/:resourceId` | [#13](https://github.com/HaDuve/FantasyEconomySim/issues/13) | **Order book**, chart, **order ticket**, open **orders** |
+| 6 | Production assignment | `/production` | [#14](https://github.com/HaDuve/FantasyEconomySim/issues/14) | **Workers**, **buildings**, **assignments**, **conversions** |
+| 7 | Historical ledger | `/ledger` | [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12) read-only | **Settlement** history by **tick** |
 
 ---
 
@@ -65,7 +65,8 @@ flowchart LR
 | Profession grid | Hunter, Miner, Herbalist cards | `STARTER_TRIO_PROFESSION_IDS` from domain; single select |
 | Detail pane | Selected profession summary | Hunter → **field work** / `game`; Miner → Mine + `ore`; Herbalist → shop + `herbs` |
 | Footer CTA | Confirm profession | Send once to server with first connect; triggers **starter package** (100 **crowns**, 1 **worker**, no **buildings**) |
-| Skip | Guest play without full account | Allowed; same **player** id until **upgrade** |
+| Header: Skip Tutorial | Skip tick explainer only | Optional: collapse hero / jump to profession grid; **starter trio** pick remains **mandatory** on first connect |
+| Guest / upgrade | (not on this screen) | Anonymous **guest** is the default connect path; **upgrade** to a linked account is a separate settings flow ([#15](https://github.com/HaDuve/FantasyEconomySim/issues/15)) |
 
 **Drop from mock:** fictional starter bonuses (+15% pelt yield, LVL, wrong starter inventory copy).
 
@@ -85,7 +86,9 @@ flowchart LR
 | Active operations | Production / fill alerts | Filled **orders**, **assignment** output, low **crowns** for **upkeep** |
 | Open orders strip | Recent activity | Deep link to terminal or ledger |
 
-**Issue:** [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12) (shell + tick HUD), overlaps dashboard polish.
+**Slice [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12):** tick HUD, **wallet** balance, command-center shortcuts, connection status.
+
+**Post-MVP polish (parent [#1](https://github.com/HaDuve/FantasyEconomySim/issues/1)):** portfolio chart, net-worth delta, full resource sparkline grid.
 
 ---
 
@@ -98,10 +101,11 @@ flowchart LR
 | Capacity bar | Weight / expand storage | **Out of v1** — single **inventory**, no weight cap in domain |
 | Storage locations | Primary vault, outpost | **Out of v1** |
 | Resource table | Qty, avg cost, market val, trend, actions | Qty from **inventory**; market val from book; avg cost only if server tracks cost basis (else hide) |
+| Row action: Pool buy | Buy from **supply pool** | Tier 1–2 **resources** only; see [Pool buy](#pool-buy-14) |
 | Reserve panel | Stock reserved for production | v1: optional “reserved” qty if **conversion** inputs locked same tick |
 | Transfer panel | Move between locations | **Out of v1** |
 
-**Issue:** [#14](https://github.com/HaDuve/FantasyEconomySim/issues/14) (production flows); inventory list may ship with [#12].
+**Slice [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12):** read-only qty table. **Slice [#14](https://github.com/HaDuve/FantasyEconomySim/issues/14):** reserve + **pool buy** row action.
 
 ---
 
@@ -112,10 +116,11 @@ flowchart LR
 | Region | Content | v1 data / behavior |
 |--------|---------|-------------------|
 | Ticker grid | 8 **resource** cards: last price, Δ%, volume, mini chart | One card per `RESOURCE_IDS`; tap → `/market/:resourceId` |
+| Card action: Pool buy | Instant buy at **pool price** | Tier 1–2 only (`grain`, `game`, `lumber`, `ore`, `herbs`); see [Pool buy](#pool-buy-14) |
 | Depth / heat table | Bid vs ask volume | Aggregated book levels per **resource** |
 | Featured detail | Highlight one **resource** | Same as terminal header stats |
 
-**Issue:** [#13](https://github.com/HaDuve/FantasyEconomySim/issues/13)
+**Slice [#13](https://github.com/HaDuve/FantasyEconomySim/issues/13):** browse + drill-down. **Slice [#14](https://github.com/HaDuve/FantasyEconomySim/issues/14):** **pool buy** entry on eligible cards.
 
 ---
 
@@ -166,6 +171,22 @@ flowchart LR
 | Export | Download ledger | Defer or CSV later |
 
 **Note:** Design uses `g` for crowns; use `CR` in UI.
+
+**Slice [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12):** read-only table + tick filter (minimal v1). **Slice [#13](https://github.com/HaDuve/FantasyEconomySim/issues/13):** “Recent trades” tape on trade terminal covers per-**resource** trade history until full ledger ships.
+
+---
+
+## Pool buy ([#14](https://github.com/HaDuve/FantasyEconomySim/issues/14))
+
+**Pool buy** is not a separate screen; it is a sheet/modal launched from existing surfaces. Only tier 1–2 **resources** with **world drip** stock in the **supply pool** are eligible (`grain`, `game`, `lumber`, `ore`, `herbs`).
+
+| Entry point | Trigger | Sheet content |
+|-------------|---------|---------------|
+| Marketplace card | “Pool buy” on eligible **resource** | **Resource** name, **pool price** (CR/unit), qty stepper, total **crowns**, confirm |
+| Inventory row | “Buy from pool” on eligible row | Same sheet; pre-selected **resource** |
+| Production (optional) | Missing **conversion** input hint | Deep link to pool buy for staple inputs; defer if #14 scope is tight |
+
+**Behavior:** debits **wallet**, credits **inventory** immediately (not a player **order**). Show server validation errors (insufficient **crowns**, empty **supply pool**). No **pool buy** for `ingots`, `potions`, `scrolls`.
 
 ---
 
@@ -285,7 +306,7 @@ First vertical slice for [#13](https://github.com/HaDuve/FantasyEconomySim/issue
 | Styling | Map tokens to `StyleSheet` or NativeWind; reuse semantic names (`primary`, `destructive`, `bid`) |
 | Sync | WebSocket: balances, book, tick id ([#11](https://github.com/HaDuve/FantasyEconomySim/issues/11)) |
 | Auth | Firebase anonymous **guest**; **upgrade** retains **player** id ([#15](https://github.com/HaDuve/FantasyEconomySim/issues/15), [#22](https://github.com/HaDuve/FantasyEconomySim/issues/22)) |
-| Export designs | Open `design-export/*.html` in browser; screenshot for PRs; or re-export from UX Pilot zip |
+| Export designs | Open `design-export/*.html` in browser; see [`design-export/README.md`](./design-export/README.md) |
 | Code export | HTML includes Tailwind CDN + inline config — useful for web prototype only |
 
 ### Suggested build order
@@ -294,19 +315,22 @@ First vertical slice for [#13](https://github.com/HaDuve/FantasyEconomySim/issue
 2. Onboarding → starter trio ([#12](https://github.com/HaDuve/FantasyEconomySim/issues/12))
 3. **Live Order Book** + order ticket + marketplace list ([#13](https://github.com/HaDuve/FantasyEconomySim/issues/13))
 4. Production + pool buy ([#14](https://github.com/HaDuve/FantasyEconomySim/issues/14))
-5. Ledger + dashboard polish
+5. Screen 7 ledger (read-only) on [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12); dashboard charts/polish deferred under [#1](https://github.com/HaDuve/FantasyEconomySim/issues/1)
 
 ### GitHub slices (parent [#1](https://github.com/HaDuve/FantasyEconomySim/issues/1))
 
 | Issue | Screens / components |
 |-------|---------------------|
-| [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12) | 1, 2 (minimal), header, tick HUD, connect |
-| [#13](https://github.com/HaDuve/FantasyEconomySim/issues/13) | 4, 5, Live Order Book, order ticket |
-| [#14](https://github.com/HaDuve/FantasyEconomySim/issues/14) | 3 (qty table), 6, pool buy, buildings |
+| [#12](https://github.com/HaDuve/FantasyEconomySim/issues/12) | **1** onboarding, **2** minimal dashboard (tick HUD, **wallet**, shortcuts), **3** inventory qty list, **7** read-only ledger, `MainHeader`, guest connect |
+| [#13](https://github.com/HaDuve/FantasyEconomySim/issues/13) | **4** marketplace, **5** trade terminal, Live Order Book, order ticket, recent-trades tape |
+| [#14](https://github.com/HaDuve/FantasyEconomySim/issues/14) | **3** reserve + row **pool buy**, **4** card **pool buy**, **6** production / buildings / **assignments** |
+| [#1](https://github.com/HaDuve/FantasyEconomySim/issues/1) (post-MVP) | **2** full dashboard polish (portfolio chart, sparkline grid, net-worth delta) |
 
 ---
 
 ## Design export inventory
+
+Filenames are truncated by the UX Pilot exporter (`Dashboar`, `Pro`, `S`, etc.); paths below are authoritative.
 
 | File | Screen |
 |------|--------|
@@ -318,7 +342,7 @@ First vertical slice for [#13](https://github.com/HaDuve/FantasyEconomySim/issue
 | `6-Fantasy Trader - Production As.html` | Production |
 | `7-Fantasy Trader - Historical Le.html` | Ledger |
 
-Original archive: `uxpilot-export-1779092097712.zip` (user Downloads).
+See [`design-export/README.md`](./design-export/README.md) before treating HTML as domain truth.
 
 ---
 
