@@ -7,7 +7,7 @@ import {
   type AssignmentId,
   type ResourceId,
 } from "@fantasy-economy-sim/domain";
-import { and, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import type { Db, DbExecutor } from "../db/client.js";
 import {
@@ -37,6 +37,12 @@ type ActiveAssignment = {
   privateBuildingTypeId: string | null;
 };
 
+type WorkerRow = typeof workers.$inferSelect;
+
+/**
+ * Stable per-tick order: player, then worker. Conversions use inventory held
+ * when each assignment runs (no same-tick chaining guarantee across workers).
+ */
 async function listActiveAssignments(db: DbExecutor): Promise<ActiveAssignment[]> {
   const rows = await db
     .select({
@@ -53,7 +59,8 @@ async function listActiveAssignments(db: DbExecutor): Promise<ActiveAssignment[]
     .leftJoin(
       privateBuildings,
       eq(workerAssignments.privateBuildingId, privateBuildings.id),
-    );
+    )
+    .orderBy(asc(workerAssignments.playerId), asc(workerAssignments.workerId));
 
   return rows.map((row) => ({
     ...row,
@@ -76,6 +83,19 @@ function assignmentCanRun(assignment: ActiveAssignment): boolean {
     assignment.privateBuildingTypeId === definition.buildingTypeId &&
     assignment.privateBuildingId !== null
   );
+}
+
+function publicFacilityFee(
+  publicBuildingTypeId: string | null,
+): number | null {
+  if (
+    publicBuildingTypeId &&
+    isPublicBuildingTypeId(publicBuildingTypeId)
+  ) {
+    return PUBLIC_BUILDING_FACILITY_FEES[publicBuildingTypeId];
+  }
+
+  return null;
 }
 
 async function applyInventoryDelta(
@@ -103,6 +123,71 @@ async function applyInventoryDelta(
   }
 }
 
+async function debitCrowns(
+  db: DbExecutor,
+  playerId: string,
+  amount: number,
+): Promise<number> {
+  if (amount <= 0) {
+    return 0;
+  }
+
+  await lockWalletForUpdate(db, playerId);
+  const wallet = await getWallet(db, playerId);
+  const crowns = wallet?.crowns ?? 0;
+
+  if (crowns < amount) {
+    return 0;
+  }
+
+  await setWalletCrowns(db, playerId, crowns - amount);
+  return amount;
+}
+
+function groupWorkersByPlayer(
+  workerRows: WorkerRow[],
+): Map<string, WorkerRow[]> {
+  const byPlayer = new Map<string, WorkerRow[]>();
+
+  for (const worker of workerRows) {
+    const list = byPlayer.get(worker.playerId) ?? [];
+    list.push(worker);
+    byPlayer.set(worker.playerId, list);
+  }
+
+  for (const list of byPlayer.values()) {
+    list.sort((a, b) => a.id.localeCompare(b.id));
+  }
+
+  return byPlayer;
+}
+
+async function chargeUpkeepPerWorker(
+  db: DbExecutor,
+  workerRows: WorkerRow[],
+): Promise<number> {
+  let upkeepCharged = 0;
+
+  for (const [playerId, playerWorkers] of groupWorkersByPlayer(workerRows)) {
+    await lockWalletForUpdate(db, playerId);
+    const wallet = await getWallet(db, playerId);
+    let crowns = wallet?.crowns ?? 0;
+
+    for (const _worker of playerWorkers) {
+      if (crowns < WORKER_UPKEEP_PER_TICK) {
+        continue;
+      }
+
+      crowns -= WORKER_UPKEEP_PER_TICK;
+      upkeepCharged += WORKER_UPKEEP_PER_TICK;
+    }
+
+    await setWalletCrowns(db, playerId, crowns);
+  }
+
+  return upkeepCharged;
+}
+
 export async function runProductionTick(
   db: Db,
 ): Promise<ProductionTickResult> {
@@ -110,11 +195,25 @@ export async function runProductionTick(
     const assignments = await listActiveAssignments(tx);
     let assignmentsRun = 0;
     let assignmentsSkipped = 0;
+    let facilityFeesCharged = 0;
 
     for (const assignment of assignments) {
       if (!assignmentCanRun(assignment)) {
         assignmentsSkipped += 1;
         continue;
+      }
+
+      const facilityFee = publicFacilityFee(assignment.publicBuildingTypeId);
+
+      if (facilityFee !== null) {
+        const paid = await debitCrowns(tx, assignment.playerId, facilityFee);
+
+        if (paid === 0) {
+          assignmentsSkipped += 1;
+          continue;
+        }
+
+        facilityFeesCharged += paid;
       }
 
       const inventorySnapshot = await getInventory(tx, assignment.playerId);
@@ -132,59 +231,11 @@ export async function runProductionTick(
       assignmentsRun += 1;
     }
 
-    const workerRows = await tx.select().from(workers);
-    const upkeepByPlayer = new Map<string, number>();
-
-    for (const worker of workerRows) {
-      upkeepByPlayer.set(
-        worker.playerId,
-        (upkeepByPlayer.get(worker.playerId) ?? 0) + WORKER_UPKEEP_PER_TICK,
-      );
-    }
-
-    const facilityByPlayer = new Map<string, number>();
-
-    for (const assignment of assignments) {
-      if (
-        assignment.publicBuildingTypeId &&
-        isPublicBuildingTypeId(assignment.publicBuildingTypeId)
-      ) {
-        facilityByPlayer.set(
-          assignment.playerId,
-          PUBLIC_BUILDING_FACILITY_FEES[assignment.publicBuildingTypeId],
-        );
-      }
-    }
-
-    let upkeepCharged = 0;
-    let facilityFeesCharged = 0;
-
-    const chargedPlayers = new Set([
-      ...upkeepByPlayer.keys(),
-      ...facilityByPlayer.keys(),
-    ]);
-
-    for (const playerId of chargedPlayers) {
-      const upkeep = upkeepByPlayer.get(playerId) ?? 0;
-      const facilityFee = facilityByPlayer.get(playerId) ?? 0;
-      const totalCharge = upkeep + facilityFee;
-
-      if (totalCharge === 0) {
-        continue;
-      }
-
-      await lockWalletForUpdate(tx, playerId);
-      const wallet = await getWallet(tx, playerId);
-      const crowns = wallet?.crowns ?? 0;
-
-      if (crowns < totalCharge) {
-        continue;
-      }
-
-      await setWalletCrowns(tx, playerId, crowns - totalCharge);
-      upkeepCharged += upkeep;
-      facilityFeesCharged += facilityFee;
-    }
+    const workerRows = await tx
+      .select()
+      .from(workers)
+      .orderBy(asc(workers.playerId), asc(workers.id));
+    const upkeepCharged = await chargeUpkeepPerWorker(tx, workerRows);
 
     return {
       assignmentsRun,

@@ -9,7 +9,14 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "../db/client.js";
 import { createPlayerWithLedger, getInventory, getWallet } from "../db/ledger.js";
 import { runMigrations } from "../db/migrate.js";
-import { orders, settlements, workerAssignments } from "../db/schema.js";
+import {
+  orders,
+  privateBuildings,
+  settlements,
+  workerAssignments,
+  workers,
+} from "../db/schema.js";
+import { eq } from "drizzle-orm";
 import { hireWorker } from "../db/workers.js";
 import { runGlobalTick } from "../market/supply-pool.js";
 import { purchasePrivateBuilding } from "./buildings.js";
@@ -36,6 +43,8 @@ describe("production", () => {
     await db.delete(settlements);
     await db.delete(orders);
     await db.delete(workerAssignments);
+    await db.delete(privateBuildings);
+    await db.delete(workers);
   });
 
   it("yields game for Hunter field work without a building", async () => {
@@ -68,6 +77,23 @@ describe("production", () => {
     expect(await getInventory(db, playerId)).toEqual({ ore: 1 });
   });
 
+  it("skips Smith conversion when ore inputs are insufficient", async () => {
+    const db = createDb(pool);
+    const { playerId } = await createPlayerWithLedger(db, {
+      crowns: 200,
+      inventory: { ore: 1 },
+    });
+    const smith = await hireWorker(db, playerId, "smith");
+    const smithy = await purchasePrivateBuilding(db, playerId, "smithy");
+
+    await setAssignment(db, playerId, smith.id, "smith_ingots", smithy.id);
+
+    const result = await runProductionTick(db);
+
+    expect(result.assignmentsSkipped).toBe(1);
+    expect(await getInventory(db, playerId)).toEqual({ ore: 1 });
+  });
+
   it("consumes ore and yields ingots on Smith conversion in one tick", async () => {
     const db = createDb(pool);
     const { playerId } = await createPlayerWithLedger(db, {
@@ -82,6 +108,51 @@ describe("production", () => {
     await runProductionTick(db);
 
     expect(await getInventory(db, playerId)).toEqual({ ingots: 1 });
+  });
+
+  it("skips Magic School production when facility fee cannot be paid", async () => {
+    const db = createDb(pool);
+    const { playerId } = await createPlayerWithLedger(db, {
+      crowns: 0,
+      inventory: { ingots: 1, potions: 1, lumber: 1 },
+    });
+    const scholar = await hireWorker(db, playerId, "scholar");
+
+    await setAssignment(db, playerId, scholar.id, "scribe_scrolls");
+
+    const result = await runProductionTick(db);
+
+    expect(result.assignmentsSkipped).toBe(1);
+    expect(result.facilityFeesCharged).toBe(0);
+    expect(await getInventory(db, playerId)).toEqual({
+      ingots: 1,
+      potions: 1,
+      lumber: 1,
+    });
+  });
+
+  it("charges facility fee for a held seat even when conversion inputs are missing", async () => {
+    const db = createDb(pool);
+    const { playerId } = await createPlayerWithLedger(db, {
+      crowns: 50,
+      inventory: { ingots: 1 },
+    });
+    const scholar = await hireWorker(db, playerId, "scholar");
+
+    await setAssignment(db, playerId, scholar.id, "scribe_scrolls");
+
+    const result = await runProductionTick(db);
+
+    expect(result.assignmentsSkipped).toBe(1);
+    expect(result.facilityFeesCharged).toBe(
+      PUBLIC_BUILDING_FACILITY_FEES.magic_school,
+    );
+    expect(await getInventory(db, playerId)).toEqual({ ingots: 1 });
+    expect((await getWallet(db, playerId))?.crowns).toBe(
+      50 -
+        PUBLIC_BUILDING_FACILITY_FEES.magic_school -
+        WORKER_UPKEEP_PER_TICK,
+    );
   });
 
   it("charges facility fee and enforces one Magic School seat per player", async () => {
@@ -108,6 +179,33 @@ describe("production", () => {
     await expect(
       setAssignment(db, playerId, secondScholar.id, "scribe_scrolls"),
     ).rejects.toMatchObject({ code: "public_building_seat_cap" });
+  });
+
+  it("charges upkeep per worker until crowns are exhausted", async () => {
+    const db = createDb(pool);
+    const { playerId } = await createPlayerWithLedger(db, { crowns: 7 });
+    await hireWorker(db, playerId, "hunter");
+    await hireWorker(db, playerId, "miner");
+
+    const result = await runProductionTick(db);
+
+    expect(result.upkeepCharged).toBe(WORKER_UPKEEP_PER_TICK);
+    expect((await getWallet(db, playerId))?.crowns).toBe(2);
+  });
+
+  it("still runs production when upkeep cannot be fully paid", async () => {
+    const db = createDb(pool);
+    const { playerId } = await createPlayerWithLedger(db, { crowns: 0 });
+    const hunter = await hireWorker(db, playerId, "hunter");
+
+    await setAssignment(db, playerId, hunter.id, "hunt_game");
+
+    const result = await runProductionTick(db);
+
+    expect(result.assignmentsRun).toBe(1);
+    expect(result.upkeepCharged).toBe(0);
+    expect(await getInventory(db, playerId)).toEqual({ game: 1 });
+    expect((await getWallet(db, playerId))?.crowns).toBe(0);
   });
 
   it("debits upkeep for each employed worker after production", async () => {
@@ -149,8 +247,12 @@ describe("production", () => {
 
     await setAssignment(db, playerId, miner.id, "mine_ore", mine.id);
     await runProductionTick(db);
-    expect(await getInventory(db, playerId)).toEqual({ ore: 1 });
+    await runProductionTick(db);
+    expect(await getInventory(db, playerId)).toEqual({ ore: 2 });
 
+    await db
+      .delete(workerAssignments)
+      .where(eq(workerAssignments.workerId, miner.id));
     await setAssignment(db, playerId, smith.id, "smith_ingots", smithy.id);
     await runProductionTick(db);
     expect(await getInventory(db, playerId)).toEqual({ ingots: 1 });
