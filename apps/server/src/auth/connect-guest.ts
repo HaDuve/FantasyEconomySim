@@ -9,9 +9,9 @@ import { eq } from "drizzle-orm";
 import type { Db, DbExecutor } from "../db/client.js";
 import { getInventory, getWallet, setWalletCrowns } from "../db/ledger.js";
 import {
+  ensurePlayerByFirebaseUid,
   getPlayerByFirebaseUid,
   getPlayerById,
-  registerPlayer,
 } from "../db/players.js";
 import { players } from "../db/schema.js";
 import { getWorkers, hireWorker } from "../db/workers.js";
@@ -71,6 +71,26 @@ async function grantStarterPackage(
     .where(eq(players.id, playerId));
 }
 
+async function ensureStarterPackageGranted(
+  tx: DbExecutor,
+  uid: string,
+  profession: ProfessionId,
+): Promise<ConnectGuestResult> {
+  const player = await ensurePlayerByFirebaseUid(tx, uid);
+
+  if (!player.starterPackageGranted) {
+    await grantStarterPackage(tx, player.id, profession);
+  }
+
+  const refreshed = await getPlayerById(tx, player.id);
+
+  return loadConnectGuestResult(
+    tx,
+    player.id,
+    refreshed?.starterPackageGranted ?? false,
+  );
+}
+
 export async function connectGuest(
   db: Db,
   verifier: IdTokenVerifier,
@@ -90,11 +110,17 @@ export async function connectGuest(
 
   const existing = await getPlayerByFirebaseUid(db, uid);
 
-  if (existing) {
-    return loadConnectGuestResult(
-      db,
-      existing.id,
-      existing.starterPackageGranted,
+  if (existing?.starterPackageGranted) {
+    return loadConnectGuestResult(db, existing.id, true);
+  }
+
+  if (existing && !existing.starterPackageGranted) {
+    if (!input.profession || !isProfessionId(input.profession)) {
+      return loadConnectGuestResult(db, existing.id, false);
+    }
+
+    return db.transaction((tx) =>
+      ensureStarterPackageGranted(tx, uid, input.profession!),
     );
   }
 
@@ -102,42 +128,7 @@ export async function connectGuest(
     throw new ProfessionRequiredError();
   }
 
-  const profession = input.profession;
-
-  return db.transaction(async (tx) => {
-    let player = await getPlayerByFirebaseUid(tx, uid);
-
-    if (!player) {
-      try {
-        player = await registerPlayer(tx, { firebaseUid: uid });
-        await grantStarterPackage(tx, player.id, profession);
-      } catch (error) {
-        if (!isUniqueViolation(error)) {
-          throw error;
-        }
-
-        player = await getPlayerByFirebaseUid(tx, uid);
-        if (!player) {
-          throw error;
-        }
-      }
-    }
-
-    const refreshed = await getPlayerById(tx, player.id);
-
-    return loadConnectGuestResult(
-      tx,
-      player.id,
-      refreshed?.starterPackageGranted ?? false,
-    );
-  });
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
+  return db.transaction((tx) =>
+    ensureStarterPackageGranted(tx, uid, input.profession!),
   );
 }
