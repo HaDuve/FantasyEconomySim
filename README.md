@@ -55,6 +55,28 @@ curl -s -X POST http://localhost:3000/dev/players \
 curl -s http://localhost:3000/dev/players/PLAYER_ID/ledger
 ```
 
+**Guest connect** (Firebase ID token; anonymous **guest** from the mobile client):
+
+```sh
+curl -s -X POST http://localhost:3000/auth/connect \
+  -H "authorization: Bearer FIREBASE_ID_TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"profession": "hunter"}'
+```
+
+Returns `{ playerId, crowns, inventory, workers, starterPackageGranted }`. First connect grants the **starter package** (100 **crowns**, empty **inventory**, one **worker**). Reconnect with the same token does not grant again.
+
+For local curl without Firebase, set `FIREBASE_AUTH_DISABLED=true` in `.env` and use a dev token `dev:<uid>` (uid becomes the guest’s Firebase uid stand-in):
+
+```sh
+curl -s -X POST http://localhost:3000/auth/connect \
+  -H "authorization: Bearer dev:local-guest-1" \
+  -H 'content-type: application/json' \
+  -d '{"profession": "hunter"}'
+```
+
+Production uses Firebase Admin (`GOOGLE_APPLICATION_CREDENTIALS` or ADC); see `.env.example`.
+
 ### Mobile (`apps/mobile`)
 
 Expo **development client** scaffold (ADR-0001). Requires a dev build for native `expo-dev-client`; use Expo Go only for quick UI checks without custom native code.
