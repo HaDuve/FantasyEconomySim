@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   integer,
@@ -185,6 +186,16 @@ export const workerAssignments = pgTable(
       .where(sql`${table.publicBuildingTypeId} is not null`),
   ],
 );
+
+/** Completed **global tick** history (CONTEXT). */
+export const globalTicks = pgTable("global_ticks", {
+  tickId: bigint("tick_id", { mode: "number" })
+    .primaryKey()
+    .generatedAlwaysAsIdentity(),
+  completedAt: timestamp("completed_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 /** **Resource** quantities held in a player's **inventory**. */
 export const inventory = pgTable(

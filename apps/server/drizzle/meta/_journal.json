@@ -50,6 +50,13 @@
       "when": 1779100000000,
       "tag": "0006_production",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779110000000,
+      "tag": "0007_global_ticks",
+      "breakpoints": true
     }
   ]
 }

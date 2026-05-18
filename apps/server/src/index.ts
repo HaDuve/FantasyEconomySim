@@ -6,6 +6,10 @@ import { createDb } from "./db/client.js";
 import { loadRepoEnv } from "./db/env.js";
 import { runMigrations } from "./db/migrate.js";
 import { createServer } from "./server.js";
+import {
+  DEFAULT_GLOBAL_TICK_INTERVAL_MS,
+  startGlobalTickScheduler,
+} from "./tick/tick-scheduler.js";
 
 loadRepoEnv();
 
@@ -24,8 +28,36 @@ const idTokenVerifier =
     : createFirebaseIdTokenVerifier();
 
 const port = Number(process.env.PORT ?? 3000);
+const db = createDb(pool);
 const server = createServer({ pool, idTokenVerifier });
+
+const globalTickIntervalMs = Number(
+  process.env.GLOBAL_TICK_INTERVAL_MS ?? DEFAULT_GLOBAL_TICK_INTERVAL_MS,
+);
+
+if (!Number.isFinite(globalTickIntervalMs) || globalTickIntervalMs <= 0) {
+  throw new Error("GLOBAL_TICK_INTERVAL_MS must be a positive number");
+}
+
+const tickScheduler = startGlobalTickScheduler({
+  db,
+  intervalMs: globalTickIntervalMs,
+  onError: (error) => {
+    console.error("global tick failed", error);
+  },
+});
 
 server.listen(port, () => {
   console.log(`server listening on http://localhost:${port}`);
+  console.log(`global tick every ${globalTickIntervalMs}ms`);
 });
+
+function shutdown(): void {
+  tickScheduler.stop();
+  server.close(() => {
+    void pool.end();
+  });
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
