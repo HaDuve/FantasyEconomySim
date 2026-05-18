@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding - Choose Profession</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+            <script>
+            // tailwind.config (IMPORTANT FOR STYLES)
+            tailwind.config = {
+                        theme: {
+                            extend: {
+                                colors: {
+                                    "border": "var(--border)",
+                                    "input": "var(--input)",
+                                    "ring": "var(--ring)",
+                                    "background": "var(--background)",
+                                    "foreground": "var(--foreground)",
+                                    "primary": {
+                                        "DEFAULT": "var(--primary)",
+                                        "foreground": "var(--primary-foreground)",
+                                    },
+                                    "secondary": {
+                                        "DEFAULT": "var(--secondary)",
+                                        "foreground": "var(--secondary-foreground)",
+                                    },
+                                    "destructive": {
+                                        "DEFAULT": "var(--destructive)",
+                                        "foreground": "var(--destructive-foreground)",
+                                    },
+                                    "muted": {
+                                        "DEFAULT": "var(--muted)",
+                                        "foreground": "var(--muted-foreground)",
+                                    },
+                                    "accent": {
+                                        "DEFAULT": "var(--accent)",
+                                        "foreground": "var(--accent-foreground)",
+                                    },
+                                    "popover": {
+                                        "DEFAULT": "var(--popover)",
+                                        "foreground": "var(--popover-foreground)",
+                                    },
+                                    "card": {
+                                        "DEFAULT": "var(--card)",
+                                        "foreground": "var(--card-foreground)",
+                                    },
+                                    "sidebar": {
+                                        "DEFAULT": "var(--sidebar)",
+                                        "foreground": "var(--sidebar-foreground)",
+                                        "primary": "var(--sidebar-primary)",
+                                        "primary-foreground": "var(--sidebar-primary-foreground)",
+                                        "accent": "var(--sidebar-accent)",
+                                        "accent-foreground": "var(--sidebar-accent-foreground)",
+                                        "border": "var(--sidebar-border)",
+                                        "ring": "var(--sidebar-ring)",
+                                    },
+                                    "chart": {
+                                        "1": "var(--chart-1)",
+                                        "2": "var(--chart-2)",
+                                        "3": "var(--chart-3)",
+                                        "4": "var(--chart-4)",
+                                        "5": "var(--chart-5)",
+                                    },
+                                },
+                                "borderRadius": {
+                                    "lg": "var(--radius)",
+                                    "md": "calc(var(--radius) - 2px)",
+                                    "sm": "calc(var(--radius) - 4px)",
+                                },
+                                "fontFamily": {
+                                    "sans": ["var(--font-sans)"],
+                                    "serif": ["var(--font-serif)"],
+                                    "mono": ["var(--font-mono)"],
+                                },
+                                "boxShadow": {
+                                    "2xs": "var(--shadow-2xs)",
+                                    "xs": "var(--shadow-xs)",
+                                    "sm": "var(--shadow-sm)",
+                                    "DEFAULT": "var(--shadow)",
+                                    "md": "var(--shadow-md)",
+                                    "lg": "var(--shadow-lg)",
+                                    "xl": "var(--shadow-xl)",
+                                    "2xl": "var(--shadow-2xl)",
+                                },
+                            },
+                        }
+                    }
+            </script>
+            
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <style>
+        
+
+        body { margin: 0; padding: 0; font-family: var(--font-serif); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--background); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        
+        .glass-panel {
+            background: rgba(255, 252, 245, 0.85); /* --card with opacity */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(74, 63, 53, 0.1), 0 2px 4px -1px rgba(74, 63, 53, 0.06);
+        }
+        
+        .card-selected {
+            border-color: var(--primary);
+            background: var(--card);
+            box-shadow: inset 0 0 20px rgba(166, 124, 82, 0.1), 0 0 15px rgba(166, 124, 82, 0.3); /* Soft candle-lit amber glow using --primary hex */
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-sans);
+        }
+    </style>
+<style>
+:root {
+          --background: #f5f1e6;
+          --foreground: #4a3f35;
+          --card: #fffcf5;
+          --card-foreground: #4a3f35;
+          --popover: #fffcf5;
+          --popover-foreground: #4a3f35;
+          --primary: #a67c52;
+          --primary-foreground: #ffffff;
+          --secondary: #e2d8c3;
+          --secondary-foreground: #5c4d3f;
+          --muted: #ece5d8;
+          --muted-foreground: #7d6b56;
+          --accent: #d4c8aa;
+          --accent-foreground: #4a3f35;
+          --destructive: #b54a35;
+          --destructive-foreground: #ffffff;
+          --border: #dbd0ba;
+          --input: #dbd0ba;
+          --ring: #a67c52;
+          --chart-1: #a67c52;
+          --chart-2: #8d6e4c;
+          --chart-3: #735a3a;
+          --chart-4: #b3906f;
+          --chart-5: #c0a080;
+          --sidebar: #ece5d8;
+          --sidebar-foreground: #4a3f35;
+          --sidebar-primary: #a67c52;
+          --sidebar-primary-foreground: #ffffff;
+          --sidebar-accent: #d4c8aa;
+          --sidebar-accent-foreground: #4a3f35;
+          --sidebar-border: #dbd0ba;
+          --sidebar-ring: #a67c52;
+          --font-sans: Libre Baskerville, serif;
+          --font-serif: Lora, serif;
+          --font-mono: IBM Plex Mono, monospace;
+          --radius: 0.25rem;
+          --shadow-x: 2px;
+          --shadow-y: 3px;
+          --shadow-blur: 5px;
+          --shadow-spread: 0px;
+          --shadow-opacity: 0.12;
+          --shadow-color: hsl(28 13% 20%);
+          --shadow-2xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
+          --shadow-xs: 2px 3px 5px 0px hsl(28 13% 20% / 0.06);
+          --shadow-sm: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
+          --shadow: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 1px 2px -1px hsl(28 13% 20% / 0.12);
+          --shadow-md: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 2px 4px -1px hsl(28 13% 20% / 0.12);
+          --shadow-lg: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 4px 6px -1px hsl(28 13% 20% / 0.12);
+          --shadow-xl: 2px 3px 5px 0px hsl(28 13% 20% / 0.12), 2px 8px 10px -1px hsl(28 13% 20% / 0.12);
+          --shadow-2xl: 2px 3px 5px 0px hsl(28 13% 20% / 0.30);
+          --tracking-normal: 0em;
+          --spacing: 0.25rem;
+}
+</style>
+</head>
+<body class="min-h-screen flex flex-col overflow-x-hidden antialiased bg-background text-foreground" style="background-image: url('https://www.transparenttextures.com/patterns/parchment.png')">
+
+    <!-- Onboarding Container -->
+    <main class="flex-grow flex flex-col relative w-full h-screen">
+        
+        <!-- Background Effects -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px]"></div>
+            <div class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent/20 blur-[120px]"></div>
+        </div>
+
+        <!-- Header / Progress -->
+        <header id="onboarding-header" class="w-full z-10 px-8 py-6 flex justify-between items-center bg-card/80 backdrop-blur-md border-b border-border shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-[0_0_10px_rgba(166,124,82,0.4)] border border-border">
+                    <i class="fa-solid fa-scroll text-primary-foreground text-sm"></i>
+                </div>
+                <span class="font-bold text-xl tracking-wide font-sans text-foreground">Aetheria Markets</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <div class="w-12 h-1.5 bg-primary rounded-full shadow-[0_0_8px_rgba(166,124,82,0.6)]"></div>
+                <div class="w-2 h-2 rounded-full bg-border"></div>
+                <div class="w-2 h-2 rounded-full bg-border"></div>
+            </div>
+            
+            <button class="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium px-4 py-2 rounded-md hover:bg-muted">
+                Skip Tutorial
+            </button>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="flex-grow flex items-center justify-center z-10 p-8 w-full max-w-7xl mx-auto">
+            <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-12">
+                
+                <!-- Left: Tutorial & Context -->
+                <div id="economy-tutorial-hero" class="lg:col-span-5 flex flex-col justify-center space-y-8">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-sm bg-muted border border-border text-primary text-xs font-mono mb-6 shadow-sm">
+                            <i class="fa-solid fa-hourglass-half"></i>
+                            TICK SYSTEM ACTIVE
+                        </div>
+                        <h1 class="text-5xl font-bold leading-tight mb-4 tracking-tight text-foreground">
+                            Master the <br/>
+                            <span class="text-primary italic">Tick Economy</span>
+                        </h1>
+                        <p class="text-muted-foreground text-lg leading-relaxed mb-6 font-serif">
+                            The realm's state advances on discrete ticks. Prices fluctuate, orders fill, and resources are produced simultaneously across the markets.
+                        </p>
+                    </div>
+
+                    <div class="glass-panel rounded-lg p-6 space-y-4">
+                        <h3 class="text-sm font-bold text-primary uppercase tracking-wider mb-2 font-sans border-b border-border pb-2">How it works</h3>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0 border border-border text-destructive shadow-sm">
+                                <i class="fa-solid fa-hourglass-end"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-foreground mb-1">1 Tick = 15 Minutes</h4>
+                                <p class="text-sm text-muted-foreground">All market orders and production cycles resolve at the end of a tick.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 mt-4">
+                            <div class="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0 border border-border text-chart-2 shadow-sm">
+                                <i class="fa-solid fa-sack-dollar"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-foreground mb-1">8 Core Resources</h4>
+                                <p class="text-sm text-muted-foreground">Harvest, refine, and trade. Choose a starting profession to gain an early market edge.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Profession Selection -->
+                <div id="profession-selection-grid" class="lg:col-span-7 flex flex-col">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold mb-2 text-foreground">Choose Your Path</h2>
+                        <p class="text-muted-foreground">Select a starter profession. This determines your initial inventory and harvesting bonuses.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <!-- Card 1 -->
+                        <div class="glass-panel rounded-lg p-6 cursor-pointer hover:border-primary/50 transition-all group flex flex-col h-full relative overflow-hidden">
+                            <div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="w-12 h-12 rounded-md bg-muted border border-border flex items-center justify-center mb-4 text-destructive text-xl z-10 shadow-sm">
+                                <i class="fa-solid fa-bow-arrow"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2 z-10 text-foreground">Hunter</h3>
+                            <p class="text-sm text-muted-foreground mb-6 flex-grow z-10">Specializes in gathering animal pelts and rare meats from the wild.</p>
+                            <div class="z-10 border-t border-border pt-3">
+                                <div class="text-xs font-mono text-muted-foreground mb-1">STARTER BONUS</div>
+                                <div class="text-sm font-semibold text-destructive">+15% Pelt Yield</div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2 (Selected) -->
+                        <div class="glass-panel rounded-lg p-6 cursor-pointer transition-all flex flex-col h-full relative overflow-hidden card-selected">
+                            <div class="absolute inset-0 bg-primary/5"></div>
+                            <div class="absolute top-4 right-4 text-primary">
+                                <i class="fa-solid fa-certificate"></i>
+                            </div>
+                            <div class="w-12 h-12 rounded-md bg-primary border border-primary flex items-center justify-center mb-4 text-primary-foreground text-xl z-10 shadow-[0_0_10px_rgba(166,124,82,0.5)]">
+                                <i class="fa-solid fa-pickaxe"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2 z-10 text-foreground">Miner</h3>
+                            <p class="text-sm text-muted-foreground mb-6 flex-grow z-10">Focuses on extracting raw ores and precious gems from deep veins.</p>
+                            <div class="z-10 border-t border-primary/30 pt-3">
+                                <div class="text-xs font-mono text-primary/80 mb-1">STARTER BONUS</div>
+                                <div class="text-sm font-semibold text-primary">+20% Ore Extraction</div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3 -->
+                        <div class="glass-panel rounded-lg p-6 cursor-pointer hover:border-primary/50 transition-all group flex flex-col h-full relative overflow-hidden">
+                            <div class="absolute inset-0 bg-[#2D4F1E]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="w-12 h-12 rounded-md bg-muted border border-border flex items-center justify-center mb-4 text-[#2D4F1E] text-xl z-10 shadow-sm">
+                                <i class="fa-solid fa-leaf"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2 z-10 text-foreground">Herbalist</h3>
+                            <p class="text-sm text-muted-foreground mb-6 flex-grow z-10">Expert in foraging medicinal plants and rare roots.</p>
+                            <div class="z-10 border-t border-border pt-3">
+                                <div class="text-xs font-mono text-muted-foreground mb-1">STARTER BONUS</div>
+                                <div class="text-sm font-semibold text-[#2D4F1E]">-1 Tick Harvest Time</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Detail Pane -->
+                    <div id="profession-detail-pane" class="glass-panel rounded-lg p-6 border-l-4 border-l-primary">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-lg font-bold text-foreground">Starting Inventory: Miner</h4>
+                                <p class="text-sm text-muted-foreground">Items available in your warehouse at Tick 0.</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-muted rounded-md p-3 border border-border flex items-center gap-3 shadow-sm">
+                                <div class="text-primary"><i class="fa-solid fa-coins"></i></div>
+                                <div>
+                                    <div class="text-xs text-muted-foreground font-sans">Gold Coins</div>
+                                    <div class="font-mono font-bold text-foreground">5,000</div>
+                                </div>
+                            </div>
+                            <div class="bg-muted rounded-md p-3 border border-border flex items-center gap-3 shadow-sm">
+                                <div class="text-chart-2"><i class="fa-solid fa-cubes"></i></div>
+                                <div>
+                                    <div class="text-xs text-muted-foreground font-sans">Iron Ore</div>
+                                    <div class="font-mono font-bold text-foreground">100</div>
+                                </div>
+                            </div>
+                            <div class="bg-muted rounded-md p-3 border border-border flex items-center gap-3 shadow-sm">
+                                <div class="text-chart-3"><i class="fa-solid fa-gem"></i></div>
+                                <div>
+                                    <div class="text-xs text-muted-foreground font-sans">Raw Quartz</div>
+                                    <div class="font-mono font-bold text-foreground">25</div>
+                                </div>
+                            </div>
+                            <div class="bg-muted rounded-md p-3 border border-border flex items-center gap-3 shadow-sm">
+                                <div class="text-foreground"><i class="fa-solid fa-hammer"></i></div>
+                                <div>
+                                    <div class="text-xs text-muted-foreground font-sans">Basic Pick</div>
+                                    <div class="font-mono font-bold text-foreground">1x</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <footer id="navigation-action-bar" class="w-full z-10 px-8 py-6 bg-card/90 backdrop-blur-md border-t border-border mt-auto shadow-[0_-4px_6px_-1px_rgba(74,63,53,0.05)]">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <button class="px-6 py-3 rounded-md font-semibold text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent hover:border-border transition-all">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Back
+                </button>
+                
+                <button class="px-8 py-3 rounded-md font-bold text-primary-foreground bg-primary shadow-[0_0_15px_rgba(166,124,82,0.4)] hover:shadow-[0_0_20px_rgba(166,124,82,0.6)] hover:bg-chart-2 border border-primary transition-all flex items-center gap-2">
+                    Confirm Profession <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </footer>
+
+    </main>
+
+</body>
+</html>
