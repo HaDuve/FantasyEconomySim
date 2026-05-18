@@ -9,6 +9,10 @@ export const repoEnvPath = path.join(
   "../../../../.env",
 );
 
+export function loadEnvFromPath(envPath: string): void {
+  config({ path: envPath });
+}
+
 export function loadRepoEnv(): void {
-  config({ path: repoEnvPath });
+  loadEnvFromPath(repoEnvPath);
 }

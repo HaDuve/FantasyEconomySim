@@ -1,8 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { loadRepoEnv, repoEnvPath } from "./env.js";
+import { loadEnvFromPath, repoEnvPath } from "./env.js";
 
 describe("loadRepoEnv", () => {
   const previousDatabaseUrl = process.env.DATABASE_URL;
@@ -15,18 +16,26 @@ describe("loadRepoEnv", () => {
     }
   });
 
-  it("resolves repo-root .env next to compose.yml", () => {
+  it("points repoEnvPath at repo root beside compose.yml", () => {
     const repoRoot = path.dirname(repoEnvPath);
 
-    expect(existsSync(repoEnvPath)).toBe(true);
+    expect(repoEnvPath).toBe(path.join(repoRoot, ".env"));
     expect(existsSync(path.join(repoRoot, "compose.yml"))).toBe(true);
-    expect(readFileSync(repoEnvPath, "utf8")).toContain("DATABASE_URL=");
+    expect(readFileSync(path.join(repoRoot, ".env.example"), "utf8")).toContain(
+      "DATABASE_URL=",
+    );
   });
 
-  it("loads DATABASE_URL from repo-root .env when unset", () => {
-    delete process.env.DATABASE_URL;
+  it("loads DATABASE_URL from an env file when unset", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "fes-env-test-"));
+    const envPath = path.join(dir, ".env");
+    writeFileSync(
+      envPath,
+      "DATABASE_URL=postgres://fes:fes@localhost:5433/fes_dev\n",
+    );
 
-    loadRepoEnv();
+    delete process.env.DATABASE_URL;
+    loadEnvFromPath(envPath);
 
     expect(process.env.DATABASE_URL).toMatch(/\/fes_dev$/);
   });
