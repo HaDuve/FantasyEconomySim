@@ -11,7 +11,7 @@ import {
 import { getPlayerById } from "./db/players.js";
 import { isMarketError } from "./market/errors.js";
 import { cancelOrder, placeOrder, type PlaceOrderInput } from "./market/orders.js";
-import { runTickAuction } from "./market/tick-auction.js";
+import { runGlobalTick } from "./market/supply-pool.js";
 
 type DevCreateBody = {
   firebaseUid?: string | null;
@@ -152,7 +152,7 @@ export async function handleDevRoute(
 
   if (method === "POST" && url === "/dev/market/tick-auction") {
     try {
-      const result = await runTickAuction(db);
+      const result = await runGlobalTick(db);
       sendJson(response, 200, result);
     } catch (error) {
       sendMarketError(response, error);
