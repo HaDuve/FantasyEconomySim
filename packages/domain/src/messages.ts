@@ -42,9 +42,11 @@ export type TickBroadcast = {
   assignments: AssignmentSnapshot[];
 };
 
+export type CommandKind = ClientCommand["kind"] | "unknown";
+
 export type CommandErrorMessage = {
   kind: "command_error";
-  commandKind: ClientCommand["kind"];
+  commandKind: CommandKind;
   code: string;
 };
 

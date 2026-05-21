@@ -42,7 +42,14 @@ const tickScheduler = startGlobalTickScheduler({
   pool,
   intervalMs: globalTickIntervalMs,
   onTickComplete: async (result) => {
-    await syncGateway?.broadcastTick(result.tickId);
+    try {
+      await syncGateway?.broadcastTick(result.tickId);
+    } catch (error) {
+      console.error("tick broadcast failed after successful global tick", {
+        tickId: result.tickId,
+        error,
+      });
+    }
   },
   onError: (error) => {
     console.error("global tick failed", error);

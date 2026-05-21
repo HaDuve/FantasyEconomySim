@@ -28,10 +28,9 @@ function compareAsks(a: OpenOrder, b: OpenOrder): number {
   return a.placedAt.getTime() - b.placedAt.getTime();
 }
 
-export async function buildResourceBookSnapshots(
-  db: DbExecutor,
-): Promise<ResourceBookSnapshot[]> {
-  const openOrders = await listOpenOrders(db);
+export function buildResourceBookSnapshotsFromOrders(
+  openOrders: OpenOrder[],
+): ResourceBookSnapshot[] {
   const byResource = new Map<ResourceId, OpenOrder[]>();
 
   for (const resourceId of RESOURCE_IDS) {
@@ -63,14 +62,23 @@ export async function buildResourceBookSnapshots(
   });
 }
 
+export async function buildResourceBookSnapshots(
+  db: DbExecutor,
+): Promise<ResourceBookSnapshot[]> {
+  return buildResourceBookSnapshotsFromOrders(await listOpenOrders(db));
+}
+
 export async function buildTickBroadcast(
   db: Db,
   playerId: string,
   tickId: number,
-  books?: ResourceBookSnapshot[],
+  options: {
+    books: ResourceBookSnapshot[];
+    openOrders: OpenOrder[];
+  },
 ): Promise<TickBroadcast> {
   const wallet = await getWallet(db, playerId);
-  const playerOrders = (await listOpenOrders(db)).filter(
+  const playerOrders = options.openOrders.filter(
     (order) => order.playerId === playerId,
   );
   const assignments = await getWorkerAssignments(db, playerId);
@@ -78,7 +86,7 @@ export async function buildTickBroadcast(
   return {
     kind: "tick",
     tickId,
-    books: books ?? (await buildResourceBookSnapshots(db)),
+    books: options.books,
     walletCrowns: toWalletCrowns(wallet?.crowns ?? 0),
     inventory: await getInventory(db, playerId),
     orders: playerOrders.map((order) => ({

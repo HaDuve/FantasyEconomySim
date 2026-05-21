@@ -66,6 +66,7 @@ export type {
   CancelOrderCommand,
   ClientCommand,
   CommandErrorMessage,
+  CommandKind,
   CommandOkMessage,
   InventorySnapshot,
   PlaceOrderCommand,

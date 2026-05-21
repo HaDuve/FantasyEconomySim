@@ -14,12 +14,23 @@ import {
 import { connectGuest } from "../auth/connect-guest.js";
 import { createDevIdTokenVerifier } from "../auth/dev-id-token-verifier.js";
 import { createDb } from "../db/client.js";
-import { getWallet } from "../db/ledger.js";
+import {
+  getInventory,
+  getWallet,
+  setInventoryQuantity,
+} from "../db/ledger.js";
 import { runMigrations } from "../db/migrate.js";
+import { registerPlayer } from "../db/players.js";
+import { getWorkers, hireWorker } from "../db/workers.js";
+import { listOpenOrders } from "../market/tick-auction.js";
+import { runWorldDrip } from "../market/supply-pool.js";
+import { getPrivateBuildings } from "../production/buildings.js";
 import { createTickEngine, getCurrentTickId } from "../tick/tick-engine.js";
+import { startGlobalTickScheduler } from "../tick/tick-scheduler.js";
 import { createServer } from "../server.js";
 
 const SYNC_PATH = "/sync";
+const verifier = createDevIdTokenVerifier();
 
 function wsUrl(port: number, token?: string): string {
   const query = token ? `?token=${encodeURIComponent(token)}` : "";
@@ -59,6 +70,21 @@ function connectSync(port: number, token?: string): Promise<WebSocket> {
   });
 }
 
+async function connectGuestAndOpenWs(
+  db: ReturnType<typeof createDb>,
+  port: number,
+  uid: string,
+  profession: "hunter" | "miner" | "herbalist" = "hunter",
+): Promise<{ token: string; ws: WebSocket; playerId: string }> {
+  const token = `dev:${uid}`;
+  const connected = await connectGuest(db, verifier, {
+    idToken: token,
+    profession,
+  });
+  const ws = await connectSync(port, token);
+  return { token, ws, playerId: connected.playerId };
+}
+
 describe("sync gateway", () => {
   let container: Awaited<ReturnType<PostgreSqlContainer["start"]>>;
   let pool: Pool;
@@ -71,7 +97,6 @@ describe("sync gateway", () => {
     pool = new Pool({ connectionString: container.getConnectionUri() });
     await runMigrations(pool);
 
-    const verifier = createDevIdTokenVerifier();
     const created = createServer({
       pool,
       idTokenVerifier: verifier,
@@ -99,19 +124,23 @@ describe("sync gateway", () => {
     await expect(connectSync(port)).rejects.toThrow();
   });
 
-  it("broadcasts tick snapshots to authenticated clients after a global tick", async () => {
-    const uid = "ws-tick-broadcast";
-    const token = `dev:${uid}`;
+  it("rejects invalid tokens with HTTP 401 on upgrade", async () => {
+    await expect(connectSync(port, "not-a-dev-token")).rejects.toThrow();
+  });
+
+  it("rejects WebSocket connect before HTTP connect grants the starter package", async () => {
     const db = createDb(pool);
-    await connectGuest(db, createDevIdTokenVerifier(), {
-      idToken: token,
-      profession: "hunter",
-    });
+    const uid = "ws-no-starter";
+    await registerPlayer(db, { firebaseUid: uid });
 
-    const ws = await connectSync(port, token);
-    const tickEngine = createTickEngine(pool);
+    await expect(connectSync(port, `dev:${uid}`)).rejects.toThrow();
+  });
 
-    await tickEngine.runTick();
+  it("broadcasts tick snapshots to authenticated clients after a global tick", async () => {
+    const db = createDb(pool);
+    const { ws } = await connectGuestAndOpenWs(db, port, "ws-tick-broadcast");
+
+    await createTickEngine(pool).runTick();
     await syncGateway!.broadcastTick(await getCurrentTickId(db));
 
     const broadcast = await waitForMessage(ws, "tick");
@@ -126,17 +155,62 @@ describe("sync gateway", () => {
     ws.close();
   });
 
-  it("returns command_error for invalid place_order without changing wallet", async () => {
-    const uid = "ws-invalid-order";
-    const token = `dev:${uid}`;
+  it("pushes tick snapshots via the global tick scheduler onTickComplete hook", async () => {
     const db = createDb(pool);
-    const connected = await connectGuest(db, createDevIdTokenVerifier(), {
-      idToken: token,
-      profession: "hunter",
+    const { ws } = await connectGuestAndOpenWs(db, port, "ws-scheduler-tick");
+
+    const scheduler = startGlobalTickScheduler({
+      pool,
+      intervalMs: 60_000,
+      tickEngine: createTickEngine(pool),
+      onTickComplete: (result) => syncGateway!.broadcastTick(result.tickId),
     });
 
-    const ws = await connectSync(port, token);
-    const before = await getWallet(db, connected.playerId);
+    const broadcast = await waitForMessage(ws, "tick");
+    scheduler.stop();
+
+    expect(broadcast.tickId).toBeGreaterThan(0);
+    expect(broadcast.walletCrowns).toBe(
+      STARTER_PACKAGE_CROWNS - WORKER_UPKEEP_PER_TICK,
+    );
+
+    ws.close();
+  });
+
+  it("returns command_error for malformed place_order without creating orders", async () => {
+    const db = createDb(pool);
+    const { ws, playerId } = await connectGuestAndOpenWs(
+      db,
+      port,
+      "ws-malformed-order",
+    );
+
+    const ordersBefore = (await listOpenOrders(db)).filter(
+      (order) => order.playerId === playerId,
+    ).length;
+
+    ws.send(JSON.stringify({ kind: "place_order", resourceId: "grain" }));
+
+    const error = await waitForMessage(ws, "command_error");
+    expect(error.commandKind).toBe("place_order");
+    expect(error.code).toBe("invalid_command");
+
+    const ordersAfter = (await listOpenOrders(db)).filter(
+      (order) => order.playerId === playerId,
+    ).length;
+    expect(ordersAfter).toBe(ordersBefore);
+
+    ws.close();
+  });
+
+  it("returns command_error for invalid place_order without changing wallet", async () => {
+    const db = createDb(pool);
+    const { ws, playerId } = await connectGuestAndOpenWs(
+      db,
+      port,
+      "ws-invalid-order",
+    );
+    const before = await getWallet(db, playerId);
 
     const command: ClientCommand = {
       kind: "place_order",
@@ -151,31 +225,25 @@ describe("sync gateway", () => {
     expect(error.commandKind).toBe("place_order");
     expect(error.code).toBe("insufficient_crowns");
 
-    const after = await getWallet(db, connected.playerId);
+    const after = await getWallet(db, playerId);
     expect(after?.crowns).toBe(before?.crowns);
 
     ws.close();
   });
 
   it("accepts valid place_order and includes the order on the next tick broadcast", async () => {
-    const uid = "ws-valid-order";
-    const token = `dev:${uid}`;
     const db = createDb(pool);
-    await connectGuest(db, createDevIdTokenVerifier(), {
-      idToken: token,
-      profession: "hunter",
-    });
+    const { ws } = await connectGuestAndOpenWs(db, port, "ws-valid-order");
 
-    const ws = await connectSync(port, token);
-
-    const command: ClientCommand = {
-      kind: "place_order",
-      resourceId: "grain",
-      side: "buy",
-      price: 5,
-      quantity: 2,
-    };
-    ws.send(JSON.stringify(command));
+    ws.send(
+      JSON.stringify({
+        kind: "place_order",
+        resourceId: "grain",
+        side: "buy",
+        price: 5,
+        quantity: 2,
+      } satisfies ClientCommand),
+    );
 
     const ok = await waitForMessage(ws, "command_ok");
     expect(ok.commandKind).toBe("place_order");
@@ -196,35 +264,156 @@ describe("sync gateway", () => {
     ws.close();
   });
 
-  it("returns command_error for incompatible set_assignment without persisting", async () => {
-    const uid = "ws-bad-assignment";
-    const token = `dev:${uid}`;
+  it("cancels an open order via cancel_order", async () => {
     const db = createDb(pool);
-    const connected = await connectGuest(db, createDevIdTokenVerifier(), {
-      idToken: token,
-      profession: "hunter",
-    });
-    const [hunter] = await import("../db/workers.js").then((m) =>
-      m.getWorkers(db, connected.playerId),
+    const { ws, playerId } = await connectGuestAndOpenWs(
+      db,
+      port,
+      "ws-cancel-order",
     );
 
-    const ws = await connectSync(port, token);
+    ws.send(
+      JSON.stringify({
+        kind: "place_order",
+        resourceId: "grain",
+        side: "buy",
+        price: 4,
+        quantity: 1,
+      } satisfies ClientCommand),
+    );
+    await waitForMessage(ws, "command_ok");
 
-    const command: ClientCommand = {
-      kind: "set_assignment",
-      workerId: hunter!.id,
-      assignmentId: "mine_ore",
-    };
-    ws.send(JSON.stringify(command));
+    const [openOrder] = (await listOpenOrders(db)).filter(
+      (order) => order.playerId === playerId,
+    );
+    expect(openOrder).toBeDefined();
+
+    ws.send(
+      JSON.stringify({
+        kind: "cancel_order",
+        orderId: openOrder!.id,
+      } satisfies ClientCommand),
+    );
+
+    const cancelled = await waitForMessage(ws, "command_ok");
+    expect(cancelled.commandKind).toBe("cancel_order");
+    expect(
+      (await listOpenOrders(db)).find((order) => order.id === openOrder!.id),
+    ).toBeUndefined();
+
+    ws.close();
+  });
+
+  it("applies pool_buy against the supply pool", async () => {
+    const db = createDb(pool);
+    const { ws, playerId } = await connectGuestAndOpenWs(db, port, "ws-pool-buy");
+
+    await runWorldDrip(db);
+
+    ws.send(
+      JSON.stringify({
+        kind: "pool_buy",
+        resourceId: "grain",
+        quantity: 2,
+      } satisfies ClientCommand),
+    );
+
+    const ok = await waitForMessage(ws, "command_ok");
+    expect(ok.commandKind).toBe("pool_buy");
+    expect(await getInventory(db, playerId)).toEqual({ grain: 2 });
+
+    ws.close();
+  });
+
+  it("purchases a private building via purchase_private_building", async () => {
+    const db = createDb(pool);
+    const { ws, playerId } = await connectGuestAndOpenWs(
+      db,
+      port,
+      "ws-buy-building",
+    );
+
+    ws.send(
+      JSON.stringify({
+        kind: "purchase_private_building",
+        buildingTypeId: "mine",
+      } satisfies ClientCommand),
+    );
+
+    const ok = await waitForMessage(ws, "command_ok");
+    expect(ok.commandKind).toBe("purchase_private_building");
+
+    const buildings = await getPrivateBuildings(db, playerId);
+    expect(buildings).toHaveLength(1);
+    expect(buildings[0]?.buildingTypeId).toBe("mine");
+
+    ws.close();
+  });
+
+  it("returns command_error for incompatible set_assignment without persisting", async () => {
+    const db = createDb(pool);
+    const { ws, playerId } = await connectGuestAndOpenWs(
+      db,
+      port,
+      "ws-bad-assignment",
+    );
+    const [hunter] = await getWorkers(db, playerId);
+    expect(hunter).toBeDefined();
+
+    ws.send(
+      JSON.stringify({
+        kind: "set_assignment",
+        workerId: hunter.id,
+        assignmentId: "mine_ore",
+      } satisfies ClientCommand),
+    );
 
     const error = await waitForMessage(ws, "command_error");
     expect(error.commandKind).toBe("set_assignment");
     expect(error.code).toBe("incompatible_assignment");
 
-    const assignments = await import("../production/assignments.js").then((m) =>
-      m.getWorkerAssignments(db, connected.playerId),
+    const { getWorkerAssignments } = await import("../production/assignments.js");
+    expect(await getWorkerAssignments(db, playerId)).toEqual([]);
+
+    ws.close();
+  });
+
+  it("returns public_building_seat_cap on the wire for a second Magic School assignment", async () => {
+    const db = createDb(pool);
+    const { ws, playerId } = await connectGuestAndOpenWs(db, port, "ws-seat-cap");
+
+    await setInventoryQuantity(db, playerId, "ingots", 1);
+    await setInventoryQuantity(db, playerId, "potions", 1);
+    await setInventoryQuantity(db, playerId, "lumber", 1);
+
+    const scholar = await hireWorker(db, playerId, "scholar");
+    const secondScholar = await hireWorker(db, playerId, "scholar");
+
+    ws.send(
+      JSON.stringify({
+        kind: "set_assignment",
+        workerId: scholar.id,
+        assignmentId: "scribe_scrolls",
+      } satisfies ClientCommand),
     );
-    expect(assignments).toEqual([]);
+    await waitForMessage(ws, "command_ok");
+
+    ws.send(
+      JSON.stringify({
+        kind: "set_assignment",
+        workerId: secondScholar.id,
+        assignmentId: "scribe_scrolls",
+      } satisfies ClientCommand),
+    );
+
+    const error = await waitForMessage(ws, "command_error");
+    expect(error.commandKind).toBe("set_assignment");
+    expect(error.code).toBe("public_building_seat_cap");
+
+    const { getWorkerAssignments } = await import("../production/assignments.js");
+    const assignments = await getWorkerAssignments(db, playerId);
+    expect(assignments).toHaveLength(1);
+    expect(assignments[0]?.workerId).toBe(scholar.id);
 
     ws.close();
   });

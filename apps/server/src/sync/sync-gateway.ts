@@ -2,14 +2,22 @@ import type { IncomingMessage } from "node:http";
 import type { Server as HttpServer } from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
 
-import type { ServerMessage } from "@fantasy-economy-sim/domain";
+import type { CommandKind } from "@fantasy-economy-sim/domain";
 
 import { InvalidIdTokenError } from "../auth/id-token-verifier.js";
 import type { IdTokenVerifier } from "../auth/id-token-verifier.js";
-import { ensurePlayerByFirebaseUid } from "../db/players.js";
 import type { Db } from "../db/client.js";
-import { buildResourceBookSnapshots, buildTickBroadcast } from "./build-tick-broadcast.js";
-import { handleClientCommand, parseClientCommand } from "./handle-command.js";
+import { getPlayerByFirebaseUid } from "../db/players.js";
+import { listOpenOrders } from "../market/tick-auction.js";
+import {
+  buildResourceBookSnapshotsFromOrders,
+  buildTickBroadcast,
+} from "./build-tick-broadcast.js";
+import {
+  commandError,
+  handleClientCommand,
+  parseClientCommand,
+} from "./handle-command.js";
 
 export const SYNC_WEBSOCKET_PATH = "/sync";
 
@@ -52,6 +60,10 @@ function isSyncPath(request: IncomingMessage, path: string): boolean {
   }
 }
 
+function wireCommandError(commandKind: CommandKind, code: string): string {
+  return JSON.stringify(commandError(commandKind, code));
+}
+
 export function createSyncGateway(options: SyncGatewayOptions): SyncGateway {
   const path = options.path ?? SYNC_WEBSOCKET_PATH;
   const wss = new WebSocketServer({ noServer: true });
@@ -81,7 +93,12 @@ export function createSyncGateway(options: SyncGatewayOptions): SyncGateway {
 
     try {
       const { uid } = await options.idTokenVerifier.verify(token);
-      const player = await ensurePlayerByFirebaseUid(options.db, uid);
+      const player = await getPlayerByFirebaseUid(options.db, uid);
+
+      if (!player?.starterPackageGranted) {
+        return undefined;
+      }
+
       return { playerId: player.id };
     } catch (error) {
       if (error instanceof InvalidIdTokenError) {
@@ -105,39 +122,44 @@ export function createSyncGateway(options: SyncGatewayOptions): SyncGateway {
     authenticated.playerId = auth.playerId;
     trackClient(auth.playerId, authenticated);
 
-    socket.on("message", async (data) => {
-      let body: unknown;
+    // v1: serialize commands per socket so responses stay ordered.
+    let commandChain = Promise.resolve();
 
-      try {
-        body = JSON.parse(String(data));
-      } catch {
-        const message: ServerMessage = {
-          kind: "command_error",
-          commandKind: "place_order",
-          code: "invalid_json",
-        };
-        socket.send(JSON.stringify(message));
-        return;
-      }
+    socket.on("message", (data) => {
+      commandChain = commandChain
+        .then(async () => {
+          let body: unknown;
 
-      const command = parseClientCommand(body);
+          try {
+            body = JSON.parse(String(data));
+          } catch {
+            socket.send(wireCommandError("unknown", "invalid_json"));
+            return;
+          }
 
-      if (!command) {
-        const message: ServerMessage = {
-          kind: "command_error",
-          commandKind: "place_order",
-          code: "invalid_command",
-        };
-        socket.send(JSON.stringify(message));
-        return;
-      }
+          const parsed = parseClientCommand(body);
 
-      const response = await handleClientCommand(
-        options.db,
-        auth.playerId,
-        command,
-      );
-      socket.send(JSON.stringify(response));
+          if (!parsed.ok) {
+            socket.send(
+              wireCommandError(parsed.commandKind, parsed.code),
+            );
+            return;
+          }
+
+          const response = await handleClientCommand(
+            options.db,
+            auth.playerId,
+            parsed.command,
+          );
+          socket.send(JSON.stringify(response));
+        })
+        .catch((error) => {
+          console.error("sync gateway command failed", {
+            playerId: auth.playerId,
+            error,
+          });
+          socket.send(wireCommandError("unknown", "internal_error"));
+        });
     });
   });
 
@@ -175,16 +197,15 @@ export function createSyncGateway(options: SyncGatewayOptions): SyncGateway {
         return;
       }
 
-      const books = await buildResourceBookSnapshots(options.db);
+      const openOrders = await listOpenOrders(options.db);
+      const books = buildResourceBookSnapshotsFromOrders(openOrders);
 
       await Promise.all(
         [...clients.entries()].map(async ([playerId, sockets]) => {
-          const message = await buildTickBroadcast(
-            options.db,
-            playerId,
-            tickId,
+          const message = await buildTickBroadcast(options.db, playerId, tickId, {
             books,
-          );
+            openOrders,
+          });
           const payload = JSON.stringify(message);
 
           for (const socket of sockets) {
@@ -206,7 +227,7 @@ export function createSyncGateway(options: SyncGatewayOptions): SyncGateway {
       wss.close();
     },
   };
-}
+};
 
 export type CreateServerWithSyncResult = {
   httpServer: HttpServer;

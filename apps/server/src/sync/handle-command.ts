@@ -4,7 +4,9 @@ import {
   isResourceId,
   type ClientCommand,
   type CommandErrorMessage,
+  type CommandKind,
   type CommandOkMessage,
+  type ResourceId,
 } from "@fantasy-economy-sim/domain";
 
 import type { Db } from "../db/client.js";
@@ -15,8 +17,46 @@ import { setAssignment } from "../production/assignments.js";
 import { purchasePrivateBuilding } from "../production/buildings.js";
 import { isProductionError } from "../production/errors.js";
 
-function commandError(
-  commandKind: ClientCommand["kind"],
+export type ParseClientCommandResult =
+  | { ok: true; command: ClientCommand }
+  | { ok: false; commandKind: CommandKind; code: "invalid_command" };
+
+const CLIENT_COMMAND_KINDS = [
+  "place_order",
+  "cancel_order",
+  "pool_buy",
+  "set_assignment",
+  "purchase_private_building",
+] as const satisfies readonly ClientCommand["kind"][];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
+
+function isOrderSide(value: unknown): value is "buy" | "sell" {
+  return value === "buy" || value === "sell";
+}
+
+function isUnknownResourceId(value: unknown): value is ResourceId {
+  return typeof value === "string" && isResourceId(value);
+}
+
+function parseFailure(
+  commandKind: CommandKind,
+): Extract<ParseClientCommandResult, { ok: false }> {
+  return { ok: false, commandKind, code: "invalid_command" };
+}
+
+export function commandError(
+  commandKind: CommandKind,
   code: string,
 ): CommandErrorMessage {
   return { kind: "command_error", commandKind, code };
@@ -89,11 +129,7 @@ export async function handleClientCommand(
         break;
       }
       default: {
-        const unknown = command as { kind?: string };
-        return commandError(
-          (unknown.kind ?? "unknown") as ClientCommand["kind"],
-          "unknown_command",
-        );
+        return commandError("unknown", "unknown_command");
       }
     }
 
@@ -103,16 +139,111 @@ export async function handleClientCommand(
   }
 }
 
-export function parseClientCommand(body: unknown): ClientCommand | undefined {
-  if (!body || typeof body !== "object" || !("kind" in body)) {
-    return undefined;
+export function parseClientCommand(body: unknown): ParseClientCommandResult {
+  if (!isRecord(body) || !("kind" in body)) {
+    return parseFailure("unknown");
   }
 
-  const kind = (body as { kind: unknown }).kind;
+  const kind = body.kind;
 
-  if (typeof kind !== "string") {
-    return undefined;
+  if (
+    typeof kind !== "string" ||
+    !(CLIENT_COMMAND_KINDS as readonly string[]).includes(kind)
+  ) {
+    return parseFailure("unknown");
   }
 
-  return body as ClientCommand;
+  switch (kind) {
+    case "place_order": {
+      if (
+        !isUnknownResourceId(body.resourceId) ||
+        !isOrderSide(body.side) ||
+        !isPositiveInteger(body.price) ||
+        !isPositiveInteger(body.quantity)
+      ) {
+        return parseFailure("place_order");
+      }
+
+      return {
+        ok: true,
+        command: {
+          kind: "place_order",
+          resourceId: body.resourceId,
+          side: body.side,
+          price: body.price,
+          quantity: body.quantity,
+        },
+      };
+    }
+    case "cancel_order": {
+      if (!isNonEmptyString(body.orderId)) {
+        return parseFailure("cancel_order");
+      }
+
+      return {
+        ok: true,
+        command: { kind: "cancel_order", orderId: body.orderId },
+      };
+    }
+    case "pool_buy": {
+      if (
+        !isUnknownResourceId(body.resourceId) ||
+        !isPositiveInteger(body.quantity)
+      ) {
+        return parseFailure("pool_buy");
+      }
+
+      return {
+        ok: true,
+        command: {
+          kind: "pool_buy",
+          resourceId: body.resourceId,
+          quantity: body.quantity,
+        },
+      };
+    }
+    case "set_assignment": {
+      if (
+        !isNonEmptyString(body.workerId) ||
+        !isNonEmptyString(body.assignmentId) ||
+        !isAssignmentId(body.assignmentId)
+      ) {
+        return parseFailure("set_assignment");
+      }
+
+      const command: ClientCommand = {
+        kind: "set_assignment",
+        workerId: body.workerId,
+        assignmentId: body.assignmentId,
+      };
+
+      if (body.buildingId !== undefined) {
+        if (!isNonEmptyString(body.buildingId)) {
+          return parseFailure("set_assignment");
+        }
+
+        command.buildingId = body.buildingId;
+      }
+
+      return { ok: true, command };
+    }
+    case "purchase_private_building": {
+      if (
+        !isNonEmptyString(body.buildingTypeId) ||
+        !isPrivateBuildingTypeId(body.buildingTypeId)
+      ) {
+        return parseFailure("purchase_private_building");
+      }
+
+      return {
+        ok: true,
+        command: {
+          kind: "purchase_private_building",
+          buildingTypeId: body.buildingTypeId,
+        },
+      };
+    }
+    default:
+      return parseFailure("unknown");
+  }
 }
