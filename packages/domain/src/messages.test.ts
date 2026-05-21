@@ -7,8 +7,11 @@ describe("tick and command messages", () => {
     const broadcast: TickBroadcast = {
       kind: "tick",
       tickId: 1,
+      books: [],
       walletCrowns: 100 satisfies WalletCrowns,
       inventory: {},
+      orders: [],
+      assignments: [],
     };
     expect(broadcast.kind).toBe("tick");
     expect(broadcast.tickId).toBe(1);

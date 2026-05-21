@@ -6,4 +6,7 @@ Each **global tick**, the server pushes state to connected clients over **WebSoc
 
 Rejected for v1: poll-based sync (misaligned with 60s ticks, worse UX); bare React Native without Expo (slower iteration for a small team).
 
-Confirm WebSocket and auth library choices against current [Expo](https://docs.expo.dev/) docs when implementing.
+**WebSocket libraries (confirmed May 2026):**
+
+- **Server** (`apps/server`): [`ws`](https://github.com/websockets/ws) v8.x on the Node HTTP `upgrade` path (`/sync`). Standard choice for attaching to `node:http`; actively maintained (8.20.x).
+- **Client** (Expo / React Native, future): use the runtime WebSocket API or a client library recommended in current [Expo networking docs](https://docs.expo.dev/) when the mobile slice lands ([#22](https://github.com/HaDuve/FantasyEconomySim/issues/22) for real Firebase tokens on device).

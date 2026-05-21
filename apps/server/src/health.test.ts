@@ -3,7 +3,7 @@ import { createServer } from "./server.js";
 
 describe("server health", () => {
   it("responds ok on GET /health", async () => {
-    const server = createServer();
+    const { httpServer: server } = createServer({ enableSyncGateway: false });
     await new Promise<void>((resolve) => server.listen(0, resolve));
     const address = server.address();
     const port =

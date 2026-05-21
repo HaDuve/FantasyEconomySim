@@ -61,12 +61,19 @@ export {
   type RecipeInputs,
 } from "./recipes.js";
 export type {
+  AssignmentSnapshot,
+  BookLevelSnapshot,
   CancelOrderCommand,
   ClientCommand,
+  CommandErrorMessage,
+  CommandOkMessage,
   InventorySnapshot,
   PlaceOrderCommand,
+  PlayerOrderSnapshot,
   PoolBuyCommand,
   PurchasePrivateBuildingCommand,
+  ResourceBookSnapshot,
+  ServerMessage,
   SetAssignmentCommand,
   TickBroadcast,
 } from "./messages.js";
