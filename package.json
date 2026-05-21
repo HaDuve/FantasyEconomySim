@@ -4,7 +4,7 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "typecheck": "pnpm --filter @fantasy-economy-sim/domain build && pnpm -r typecheck",
-    "test": "pnpm --filter @fantasy-economy-sim/domain build && pnpm -r test",
+    "test": "pnpm --filter @fantasy-economy-sim/domain build && pnpm -r test && pnpm test:scripts",
     "test:integration": "pnpm --filter @fantasy-economy-sim/server test:integration",
     "dev": "bash scripts/dev-local.sh",
     "dev:reset": "RESET=1 bash scripts/dev-local.sh",
@@ -15,12 +15,12 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d --wait",
-    "db:migrate": "pnpm --filter @fantasy-economy-sim/server db:migrate"
+    "db:migrate": "pnpm --filter @fantasy-economy-sim/server db:migrate",
+    "firebase:anon-token": "node scripts/get-firebase-anon-token.mjs",
+    "test:scripts": "node --test scripts/*.test.mjs"
   },
   "devDependencies": {
+    "firebase": "^12.13.0",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "firebase": "^12.13.0"
   }
 }
