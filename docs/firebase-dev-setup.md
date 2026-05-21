@@ -24,7 +24,7 @@ Fill `.env` (see `.env.example`):
 - `EXPO_PUBLIC_FIREBASE_*` — Web app config fields (Expo reads these via `apps/mobile/app.config.ts`).
 - Optional: `FIREBASE_AUTH_DISABLED=true` to use `Bearer dev:<uid>` without Firebase.
 
-`firebaseConfig.json` is gitignored (curl / `pnpm firebase:anon-token` only). Never commit service account JSON.
+`firebaseConfig.json` is gitignored (local token script only). Never commit service account JSON.
 
 ## Expo / #12 (mobile client)
 
@@ -69,7 +69,9 @@ curl -s http://localhost:3000/health
 Anonymous ID token (repo root; requires `firebaseConfig.json`):
 
 ```sh
-TOKEN=$(pnpm firebase:anon-token)
+# Prefer node — pnpm prints lifecycle lines that break TOKEN=$(...) unless you use --silent
+TOKEN=$(node scripts/get-firebase-anon-token.mjs)
+# Or: TOKEN=$(pnpm --silent firebase:anon-token)
 ```
 
 Connect:

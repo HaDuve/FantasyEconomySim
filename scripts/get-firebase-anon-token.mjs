@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/** Prints one Firebase anonymous ID token to stdout (for curl E2E). Use via `node` in $(...); pnpm adds lifecycle lines unless --silent. */
 import { readFileSync } from "node:fs";
 import { initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously } from "firebase/auth";
