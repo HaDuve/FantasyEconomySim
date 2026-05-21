@@ -1,3 +1,4 @@
+import type { ResourceId } from "@fantasy-economy-sim/domain";
 import Constants from "expo-constants";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
@@ -12,7 +13,13 @@ import {
 } from "./src/session/game-session";
 import { createBrowserWebSocket } from "./src/sync/sync-client";
 import { HudScreen } from "./src/screens/HudScreen";
+import { MarketListScreen } from "./src/screens/MarketListScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
+import { ResourceBookScreen } from "./src/screens/ResourceBookScreen";
+
+type MarketRoute =
+  | { screen: "list" }
+  | { screen: "book"; resourceId: ResourceId };
 
 const firebaseConfig =
   Constants.expoConfig?.extra?.firebase ?? firebaseConfigFromEnv();
@@ -24,6 +31,7 @@ export default function App() {
   const [sessionState, setSessionState] = useState<GameSessionState | null>(
     null,
   );
+  const [marketRoute, setMarketRoute] = useState<MarketRoute | null>(null);
   const [busy, setBusy] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
 
@@ -95,9 +103,42 @@ export default function App() {
   }
 
   if (sessionState.phase === "hud") {
+    if (marketRoute?.screen === "book") {
+      return (
+        <>
+          <ResourceBookScreen
+            resourceId={marketRoute.resourceId}
+            hud={sessionState.hud}
+            onBack={() => setMarketRoute({ screen: "list" })}
+            onPlaceOrder={(input) => session.placeOrder(input)}
+            onCancelOrder={(orderId) => session.cancelOrder(orderId)}
+          />
+          <StatusBar style="auto" />
+        </>
+      );
+    }
+
+    if (marketRoute?.screen === "list") {
+      return (
+        <>
+          <MarketListScreen
+            hud={sessionState.hud}
+            onBack={() => setMarketRoute(null)}
+            onOpenResource={(resourceId) =>
+              setMarketRoute({ screen: "book", resourceId })
+            }
+          />
+          <StatusBar style="auto" />
+        </>
+      );
+    }
+
     return (
       <>
-        <HudScreen hud={sessionState.hud} />
+        <HudScreen
+          hud={sessionState.hud}
+          onOpenMarket={() => setMarketRoute({ screen: "list" })}
+        />
         <StatusBar style="auto" />
       </>
     );

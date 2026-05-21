@@ -1,10 +1,11 @@
 import { RESOURCE_IDS } from "@fantasy-economy-sim/domain";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { HudState } from "../session/hud-state";
 
 type HudScreenProps = {
   hud: HudState;
+  onOpenMarket?: () => void;
 };
 
 function formatInventory(inventory: HudState["inventory"]): string {
@@ -16,7 +17,7 @@ function formatInventory(inventory: HudState["inventory"]): string {
   return entries.length > 0 ? entries.join(" · ") : "empty";
 }
 
-export function HudScreen({ hud }: HudScreenProps) {
+export function HudScreen({ hud, onOpenMarket }: HudScreenProps) {
   const workerLabel =
     hud.workers.length > 0 ? hud.workers.join(", ") : "none";
 
@@ -28,6 +29,11 @@ export function HudScreen({ hud }: HudScreenProps) {
       <Text>Wallet: {hud.walletCrowns ?? "—"} crowns</Text>
       <Text>Inventory: {formatInventory(hud.inventory)}</Text>
       <Text>Worker: {workerLabel}</Text>
+      {onOpenMarket ? (
+        <Pressable accessibilityRole="button" style={styles.marketLink} onPress={onOpenMarket}>
+          <Text style={styles.marketLinkText}>Open market →</Text>
+        </Pressable>
+      ) : null}
       {hud.errorMessage ? (
         <Text style={styles.error}>{hud.errorMessage}</Text>
       ) : null}
@@ -50,5 +56,14 @@ const styles = StyleSheet.create({
   error: {
     color: "#b00020",
     marginTop: 12,
+  },
+  marketLink: {
+    marginTop: 16,
+    paddingVertical: 12,
+  },
+  marketLinkText: {
+    color: "#1565c0",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
