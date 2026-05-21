@@ -1,12 +1,13 @@
-import type {
-  AssignmentSnapshot,
-  InventorySnapshot,
-  PlayerOrderSnapshot,
-  PrivateBuildingTypeId,
-  ResourceBookSnapshot,
-  StarterTrioProfessionId,
-  TickBroadcast,
-  WalletCrowns,
+import {
+  getPrivateBuildingCost,
+  type AssignmentSnapshot,
+  type InventorySnapshot,
+  type PlayerOrderSnapshot,
+  type PrivateBuildingTypeId,
+  type ResourceBookSnapshot,
+  type StarterTrioProfessionId,
+  type TickBroadcast,
+  type WalletCrowns,
 } from "@fantasy-economy-sim/domain";
 
 import type { ConnectGuestResponse } from "../api/connect-guest";
@@ -66,6 +67,21 @@ export function applyTickBroadcast(state: HudState, tick: TickBroadcast): HudSta
     books: tick.books,
     orders: tick.orders,
     assignments: tick.assignments,
+    errorMessage: null,
+  };
+}
+
+export function applyPrivateBuildingPurchasePending(
+  state: HudState,
+  buildingTypeId: PrivateBuildingTypeId,
+): HudState {
+  if (state.walletCrowns === null) {
+    return state;
+  }
+
+  return {
+    ...state,
+    walletCrowns: state.walletCrowns - getPrivateBuildingCost(buildingTypeId),
     errorMessage: null,
   };
 }

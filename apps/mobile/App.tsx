@@ -116,6 +116,7 @@ export default function App() {
       body = (
         <HudScreen
           hud={sessionState.hud}
+          poolBuyBusy={sessionState.pendingPoolBuys.length > 0}
           onOpenMarket={() => setMarketRoute({ screen: "list" })}
           onPoolBuy={(input) => session.poolBuy(input)}
           onPurchasePrivateBuilding={(buildingTypeId) =>

@@ -20,6 +20,7 @@ import type { HudState } from "../session/hud-state";
 
 type ProductionPanelProps = {
   hud: HudState;
+  poolBuyBusy?: boolean;
   onPoolBuy: (input: PoolBuyInput) => void;
   onPurchasePrivateBuilding: (buildingTypeId: PrivateBuildingTypeId) => void;
   onSetAssignment: (input: SetAssignmentInput) => void;
@@ -42,10 +43,12 @@ function formatAssignmentLabel(hud: HudState): string {
 
 export function ProductionPanel({
   hud,
+  poolBuyBusy = false,
   onPoolBuy,
   onPurchasePrivateBuilding,
   onSetAssignment,
 }: ProductionPanelProps) {
+  // Starter v1: single worker per guest; generalise when multi-worker lands.
   const worker = hud.workers[0];
   const crowns = hud.walletCrowns ?? 0;
   const upkeepTotal = hud.workers.length * WORKER_UPKEEP_PER_TICK;
@@ -80,6 +83,7 @@ export function ProductionPanel({
           accessibilityRole="button"
           accessibilityLabel={`Pool buy ${resourceId}`}
           style={styles.button}
+          disabled={poolBuyBusy}
           onPress={() => onPoolBuy({ resourceId: resourceId as PoolResourceId, quantity: 1 })}
         >
           <Text>

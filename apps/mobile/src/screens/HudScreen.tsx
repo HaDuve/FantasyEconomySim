@@ -10,6 +10,7 @@ import { ProductionPanel } from "./ProductionPanel";
 
 type HudScreenProps = {
   hud: HudState;
+  poolBuyBusy?: boolean;
   onOpenMarket?: () => void;
   onPoolBuy?: (input: PoolBuyInput) => void;
   onPurchasePrivateBuilding?: (buildingTypeId: PrivateBuildingTypeId) => void;
@@ -27,6 +28,7 @@ function formatInventory(inventory: HudState["inventory"]): string {
 
 export function HudScreen({
   hud,
+  poolBuyBusy,
   onOpenMarket,
   onPoolBuy,
   onPurchasePrivateBuilding,
@@ -48,6 +50,7 @@ export function HudScreen({
       {onPoolBuy && onPurchasePrivateBuilding && onSetAssignment ? (
         <ProductionPanel
           hud={hud}
+          poolBuyBusy={poolBuyBusy}
           onPoolBuy={onPoolBuy}
           onPurchasePrivateBuilding={onPurchasePrivateBuilding}
           onSetAssignment={onSetAssignment}
