@@ -35,7 +35,9 @@ Fill `.env` (see `.env.example`):
 | Env vars | Repo root `.env` — `EXPO_PUBLIC_FIREBASE_*` |
 | Expo config bridge | [`apps/mobile/app.config.ts`](../apps/mobile/app.config.ts) — loads root `.env`, sets `extra.firebase` |
 | Env → config (tested) | [`apps/mobile/src/config/firebase-env.ts`](../apps/mobile/src/config/firebase-env.ts) |
-| Runtime init (slice #12) | `apps/mobile/src/config/firebase.ts` (TBD) — `initializeApp` from `extra.firebase` or `firebaseConfigFromEnv()` |
+| Runtime init (slice #12) | [`apps/mobile/src/config/firebase.ts`](../apps/mobile/src/config/firebase.ts) — anonymous guest + ID token |
+| Game session / HUD (#12) | [`apps/mobile/src/session/game-session.ts`](../apps/mobile/src/session/game-session.ts) — connect, WebSocket sync, tick HUD |
+| API base URL | `EXPO_PUBLIC_API_URL` (default `http://localhost:3000`) |
 
 When slice **#12** lands, `expo start` from `apps/mobile` will expose config via `expo-constants`:
 
