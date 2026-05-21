@@ -1,6 +1,7 @@
 import {
   isStarterTrioProfessionId,
   STARTER_PACKAGE_CROWNS,
+  type PrivateBuildingTypeId,
   type StarterTrioProfessionId,
 } from "@fantasy-economy-sim/domain";
 import type { InventorySnapshot } from "@fantasy-economy-sim/domain";
@@ -14,6 +15,7 @@ import {
   getPlayerById,
 } from "../db/players.js";
 import { players } from "../db/schema.js";
+import { getPrivateBuildings } from "../production/buildings.js";
 import { getWorkers, hireWorker } from "../db/workers.js";
 import { InvalidIdTokenError } from "./id-token-verifier.js";
 import type { IdTokenVerifier } from "./id-token-verifier.js";
@@ -28,7 +30,13 @@ export type ConnectGuestInput = {
 };
 
 export type ConnectGuestWorker = {
+  id: string;
   profession: StarterTrioProfessionId;
+};
+
+export type ConnectGuestPrivateBuilding = {
+  id: string;
+  buildingTypeId: PrivateBuildingTypeId;
 };
 
 export type ConnectGuestResult = {
@@ -36,6 +44,7 @@ export type ConnectGuestResult = {
   crowns: number;
   inventory: InventorySnapshot;
   workers: ConnectGuestWorker[];
+  privateBuildings: ConnectGuestPrivateBuilding[];
   starterPackageGranted: boolean;
 };
 
@@ -46,13 +55,19 @@ async function loadConnectGuestResult(
 ): Promise<ConnectGuestResult> {
   const wallet = await getWallet(db, playerId);
   const workerRows = await getWorkers(db, playerId);
+  const buildingRows = await getPrivateBuildings(db, playerId);
 
   return {
     playerId,
     crowns: wallet?.crowns ?? 0,
     inventory: await getInventory(db, playerId),
     workers: workerRows.map((worker) => ({
+      id: worker.id,
       profession: worker.professionId as StarterTrioProfessionId,
+    })),
+    privateBuildings: buildingRows.map((building) => ({
+      id: building.id,
+      buildingTypeId: building.buildingTypeId as PrivateBuildingTypeId,
     })),
     starterPackageGranted,
   };

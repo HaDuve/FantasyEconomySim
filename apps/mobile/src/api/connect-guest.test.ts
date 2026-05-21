@@ -8,7 +8,8 @@ describe("postConnectGuest", () => {
         playerId: "p1",
         crowns: 100,
         inventory: {},
-        workers: [{ profession: "miner" }],
+        workers: [{ id: "w1", profession: "miner" }],
+        privateBuildings: [],
         starterPackageGranted: true,
       }),
     });

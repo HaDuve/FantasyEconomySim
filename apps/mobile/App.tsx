@@ -117,6 +117,11 @@ export default function App() {
         <HudScreen
           hud={sessionState.hud}
           onOpenMarket={() => setMarketRoute({ screen: "list" })}
+          onPoolBuy={(input) => session.poolBuy(input)}
+          onPurchasePrivateBuilding={(buildingTypeId) =>
+            session.purchasePrivateBuilding(buildingTypeId)
+          }
+          onSetAssignment={(input) => session.setAssignment(input)}
         />
       );
     }

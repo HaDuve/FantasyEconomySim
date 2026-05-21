@@ -1,11 +1,18 @@
 import type {
   InventorySnapshot,
+  PrivateBuildingTypeId,
   StarterTrioProfessionId,
   WalletCrowns,
 } from "@fantasy-economy-sim/domain";
 
 export type ConnectGuestWorker = {
+  id: string;
   profession: StarterTrioProfessionId;
+};
+
+export type ConnectGuestPrivateBuilding = {
+  id: string;
+  buildingTypeId: PrivateBuildingTypeId;
 };
 
 export type ConnectGuestResponse = {
@@ -13,6 +20,7 @@ export type ConnectGuestResponse = {
   crowns: WalletCrowns;
   inventory: InventorySnapshot;
   workers: ConnectGuestWorker[];
+  privateBuildings: ConnectGuestPrivateBuilding[];
   starterPackageGranted: boolean;
 };
 

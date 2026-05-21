@@ -61,4 +61,19 @@ describe("attachSyncClient", () => {
       code: "insufficient_crowns",
     });
   });
+
+  it("forwards command_ok to onCommandOk", () => {
+    const socket = mockSocket();
+    const onCommandOk = jest.fn();
+
+    attachSyncClient(socket, { onCommandOk });
+    socket.triggerMessage(
+      JSON.stringify({ kind: "command_ok", commandKind: "pool_buy" }),
+    );
+
+    expect(onCommandOk).toHaveBeenCalledWith({
+      kind: "command_ok",
+      commandKind: "pool_buy",
+    });
+  });
 });

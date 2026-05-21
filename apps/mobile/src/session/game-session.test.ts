@@ -70,7 +70,8 @@ describe("createGameSession", () => {
           playerId: "p1",
           crowns: 100,
           inventory: {},
-          workers: [{ profession: "hunter" }],
+          workers: [{ id: "w1", profession: "hunter" }],
+          privateBuildings: [],
           starterPackageGranted: true,
         }),
       });
@@ -93,7 +94,7 @@ describe("createGameSession", () => {
     expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({
       profession: "hunter",
     });
-    expect(session.getState().hud.workers).toEqual(["hunter"]);
+    expect(session.getState().hud.workers).toEqual([{ id: "w1", profession: "hunter" }]);
     expect(session.getState().hud.walletCrowns).toBe(100);
     expect(session.getState().phase).toBe("hud");
     expect(session.getState().professionSent).toBe(true);
@@ -124,7 +125,8 @@ describe("createGameSession", () => {
         playerId: "p1",
         crowns: 100,
         inventory: { grain: 2 },
-        workers: [{ profession: "miner" }],
+        workers: [{ id: "w1", profession: "miner" }],
+        privateBuildings: [],
         starterPackageGranted: true,
       }),
     });
@@ -143,7 +145,7 @@ describe("createGameSession", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(fetchImpl.mock.calls[0][1].body).toBe("{}");
     expect(session.getState().phase).toBe("hud");
-    expect(session.getState().hud.workers).toEqual(["miner"]);
+    expect(session.getState().hud.workers).toEqual([{ id: "w1", profession: "miner" }]);
     expect(session.getState().professionSent).toBe(false);
   });
 
@@ -182,7 +184,8 @@ describe("createGameSession", () => {
           playerId: "p1",
           crowns: 100,
           inventory: {},
-          workers: [{ profession: "hunter" }],
+          workers: [{ id: "w1", profession: "hunter" }],
+          privateBuildings: [],
           starterPackageGranted: true,
         }),
       });
@@ -238,7 +241,8 @@ describe("createGameSession", () => {
         playerId: "p1",
         crowns: 100,
         inventory: {},
-        workers: [{ profession: "hunter" }],
+        workers: [{ id: "w1", profession: "hunter" }],
+        privateBuildings: [],
         starterPackageGranted: true,
       }),
     });
@@ -280,7 +284,8 @@ describe("createGameSession", () => {
         playerId: "p1",
         crowns: 100,
         inventory: {},
-        workers: [{ profession: "hunter" }],
+        workers: [{ id: "w1", profession: "hunter" }],
+        privateBuildings: [],
         starterPackageGranted: true,
       }),
     });
@@ -310,7 +315,8 @@ describe("createGameSession", () => {
         playerId: "p1",
         crowns: 100,
         inventory: {},
-        workers: [{ profession: "hunter" }],
+        workers: [{ id: "w1", profession: "hunter" }],
+        privateBuildings: [],
         starterPackageGranted: true,
       }),
     });
@@ -365,7 +371,8 @@ describe("createGameSession", () => {
         playerId: "p1",
         crowns: 100,
         inventory: {},
-        workers: [{ profession: "hunter" }],
+        workers: [{ id: "w1", profession: "hunter" }],
+        privateBuildings: [],
         starterPackageGranted: true,
       }),
     });
@@ -402,7 +409,8 @@ describe("createGameSession", () => {
         playerId: "p1",
         crowns: 100,
         inventory: {},
-        workers: [{ profession: "hunter" }],
+        workers: [{ id: "w1", profession: "hunter" }],
+        privateBuildings: [],
         starterPackageGranted: true,
       }),
     });
@@ -442,5 +450,40 @@ describe("createGameSession", () => {
     );
 
     expect(session.getState().hud.errorMessage).toBeNull();
+  });
+
+  it("updates wallet and inventory immediately when pool_buy succeeds", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        playerId: "p1",
+        crowns: 100,
+        inventory: {},
+        workers: [{ id: "w1", profession: "hunter" }],
+        privateBuildings: [],
+        starterPackageGranted: true,
+      }),
+    });
+
+    const socket = mockSocket();
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => socket,
+      onChange: () => {},
+    });
+
+    await session.start();
+    socket.trigger("open");
+
+    session.poolBuy({ resourceId: "grain", quantity: 2 });
+    socket.trigger(
+      "message",
+      JSON.stringify({ kind: "command_ok", commandKind: "pool_buy" }),
+    );
+
+    expect(session.getState().hud.walletCrowns).toBe(94);
+    expect(session.getState().hud.inventory).toEqual({ grain: 2 });
   });
 });
