@@ -1,6 +1,7 @@
+import type { ResourceId } from "@fantasy-economy-sim/domain";
 import Constants from "expo-constants";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { apiBaseUrlFromEnv } from "./src/config/server-env";
@@ -12,7 +13,14 @@ import {
 } from "./src/session/game-session";
 import { createBrowserWebSocket } from "./src/sync/sync-client";
 import { HudScreen } from "./src/screens/HudScreen";
+import { MarketListScreen } from "./src/screens/MarketListScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
+import { ResourceBookScreen } from "./src/screens/ResourceBookScreen";
+import { AppSafeArea } from "./src/ui/AppSafeArea";
+
+type MarketRoute =
+  | { screen: "list" }
+  | { screen: "book"; resourceId: ResourceId };
 
 const firebaseConfig =
   Constants.expoConfig?.extra?.firebase ?? firebaseConfigFromEnv();
@@ -24,6 +32,7 @@ export default function App() {
   const [sessionState, setSessionState] = useState<GameSessionState | null>(
     null,
   );
+  const [marketRoute, setMarketRoute] = useState<MarketRoute | null>(null);
   const [busy, setBusy] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
 
@@ -46,69 +55,85 @@ export default function App() {
     return () => session.stop();
   }, [session]);
 
+  let body: ReactNode;
+
   if (bootError) {
-    return (
+    body = (
       <View style={styles.centered}>
         <Text>Could not start: {bootError}</Text>
-        <StatusBar style="auto" />
       </View>
     );
-  }
-
-  if (!sessionState) {
-    return (
+  } else if (!sessionState) {
+    body = (
       <View style={styles.centered}>
         <ActivityIndicator />
         <Text>Signing in guest…</Text>
-        <StatusBar style="auto" />
       </View>
     );
-  }
-
-  if (sessionState.phase === "error") {
-    return (
+  } else if (sessionState.phase === "error") {
+    body = (
       <View style={styles.centered}>
         <Text>Could not connect: {sessionState.hud.errorMessage}</Text>
-        <StatusBar style="auto" />
       </View>
     );
-  }
-
-  if (sessionState.phase === "onboarding") {
-    return (
-      <>
-        <OnboardingScreen
-          busy={busy}
-          errorMessage={sessionState.hud.errorMessage}
-          onPick={async (profession) => {
-            setBusy(true);
-            try {
-              await session.pickProfession(profession);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        />
-        <StatusBar style="auto" />
-      </>
+  } else if (sessionState.phase === "onboarding") {
+    body = (
+      <OnboardingScreen
+        busy={busy}
+        errorMessage={sessionState.hud.errorMessage}
+        onPick={async (profession) => {
+          setBusy(true);
+          try {
+            await session.pickProfession(profession);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
     );
-  }
-
-  if (sessionState.phase === "hud") {
-    return (
-      <>
-        <HudScreen hud={sessionState.hud} />
-        <StatusBar style="auto" />
-      </>
+  } else if (sessionState.phase === "hud") {
+    if (marketRoute?.screen === "book") {
+      body = (
+        <ResourceBookScreen
+          resourceId={marketRoute.resourceId}
+          hud={sessionState.hud}
+          onBack={() => setMarketRoute({ screen: "list" })}
+          onPlaceOrder={(input) => session.placeOrder(input)}
+          onCancelOrder={(orderId) => session.cancelOrder(orderId)}
+        />
+      );
+    } else if (marketRoute?.screen === "list") {
+      body = (
+        <MarketListScreen
+          hud={sessionState.hud}
+          onBack={() => setMarketRoute(null)}
+          onOpenResource={(resourceId) =>
+            setMarketRoute({ screen: "book", resourceId })
+          }
+        />
+      );
+    } else {
+      body = (
+        <HudScreen
+          hud={sessionState.hud}
+          onOpenMarket={() => setMarketRoute({ screen: "list" })}
+        />
+      );
+    }
+  } else {
+    body = (
+      <View style={styles.centered}>
+        <ActivityIndicator />
+        <Text>Connecting…</Text>
+      </View>
     );
   }
 
   return (
-    <View style={styles.centered}>
-      <ActivityIndicator />
-      <Text>Connecting…</Text>
+    <AppSafeArea>
+      {body}
       <StatusBar style="auto" />
-    </View>
+    </AppSafeArea>
   );
 }
 

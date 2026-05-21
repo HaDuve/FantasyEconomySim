@@ -1,11 +1,18 @@
-import type { StarterTrioProfessionId, TickBroadcast } from "@fantasy-economy-sim/domain";
+import type {
+  CancelOrderCommand,
+  PlaceOrderCommand,
+  StarterTrioProfessionId,
+  TickBroadcast,
+} from "@fantasy-economy-sim/domain";
 
 import {
   ConnectGuestError,
   postConnectGuest,
   type ConnectGuestResponse,
 } from "../api/connect-guest";
-import type { CreateWebSocket } from "../sync/sync-client";
+import { formatCommandError } from "../sync/format-command-error";
+import { sendClientCommand } from "../sync/send-client-command";
+import type { CreateWebSocket, SyncSocket } from "../sync/sync-client";
 import { openSyncClient } from "../sync/sync-client";
 import { parseServerMessage } from "../sync/parse-server-message";
 import {
@@ -49,14 +56,19 @@ function connectErrorMessage(error: unknown): string {
   return error instanceof ConnectGuestError ? error.code : "connect_failed";
 }
 
+export type PlaceOrderInput = Omit<PlaceOrderCommand, "kind">;
+
 export function createGameSession(deps: GameSessionDeps): {
   start(): Promise<void>;
   pickProfession(profession: StarterTrioProfessionId): Promise<void>;
+  placeOrder(input: PlaceOrderInput): void;
+  cancelOrder(orderId: string): void;
   stop(): void;
   getState(): GameSessionState;
 } {
   let state = initialGameSessionState();
   let closeSync: (() => void) | undefined;
+  let syncSocket: SyncSocket | undefined;
 
   function emit(next: GameSessionState): void {
     state = next;
@@ -92,12 +104,14 @@ export function createGameSession(deps: GameSessionDeps): {
     closeSync?.();
     patchHud({ connectionStatus: "connecting", errorMessage: null });
 
-    closeSync = openSyncClient(
+    const connection = openSyncClient(
       deps.apiBaseUrl,
       idToken,
       {
         onOpen: () => patchHud({ connectionStatus: "connected" }),
         onTick: handleTickRaw,
+        onCommandError: (error) =>
+          patchHud({ errorMessage: formatCommandError(error) }),
         onClose: () => patchHud({ connectionStatus: "disconnected" }),
         onError: () =>
           patchHud({
@@ -107,6 +121,21 @@ export function createGameSession(deps: GameSessionDeps): {
       },
       deps.createWebSocket,
     );
+    syncSocket = connection.socket;
+    closeSync = connection.close;
+  }
+
+  function sendCommand(command: PlaceOrderCommand | CancelOrderCommand): void {
+    if (!syncSocket) {
+      patchHud({ errorMessage: "sync_not_connected" });
+      return;
+    }
+
+    try {
+      sendClientCommand(syncSocket, command);
+    } catch {
+      patchHud({ errorMessage: "sync_not_connected" });
+    }
   }
 
   async function connectWithProfession(
@@ -176,9 +205,18 @@ export function createGameSession(deps: GameSessionDeps): {
       }
     },
 
+    placeOrder(input) {
+      sendCommand({ kind: "place_order", ...input });
+    },
+
+    cancelOrder(orderId) {
+      sendCommand({ kind: "cancel_order", orderId });
+    },
+
     stop() {
       closeSync?.();
       closeSync = undefined;
+      syncSocket = undefined;
     },
   };
 }

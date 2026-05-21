@@ -1,5 +1,7 @@
 import type {
   InventorySnapshot,
+  PlayerOrderSnapshot,
+  ResourceBookSnapshot,
   StarterTrioProfessionId,
   TickBroadcast,
   WalletCrowns,
@@ -18,6 +20,8 @@ export type HudState = {
   tickId: number | null;
   walletCrowns: WalletCrowns | null;
   inventory: InventorySnapshot;
+  books: ResourceBookSnapshot[];
+  orders: PlayerOrderSnapshot[];
   workers: StarterTrioProfessionId[];
   connectionStatus: ConnectionStatus;
   errorMessage: string | null;
@@ -28,6 +32,8 @@ export function initialHudState(): HudState {
     tickId: null,
     walletCrowns: null,
     inventory: {},
+    books: [],
+    orders: [],
     workers: [],
     connectionStatus: "idle",
     errorMessage: null,
@@ -40,6 +46,9 @@ export function applyTickBroadcast(state: HudState, tick: TickBroadcast): HudSta
     tickId: tick.tickId,
     walletCrowns: tick.walletCrowns,
     inventory: tick.inventory,
+    books: tick.books,
+    orders: tick.orders,
+    errorMessage: null,
   };
 }
 

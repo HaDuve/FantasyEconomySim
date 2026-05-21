@@ -1,3 +1,5 @@
+import type { CommandErrorMessage } from "@fantasy-economy-sim/domain";
+
 import { parseServerMessage } from "./parse-server-message";
 
 export type SyncSocket = {
@@ -7,11 +9,13 @@ export type SyncSocket = {
   onclose: ((event: unknown) => void) | null;
   onerror: ((event: unknown) => void) | null;
   close(): void;
+  send?(payload: string): void;
 };
 
 export type SyncClientHandlers = {
   onOpen?: () => void;
   onTick?: (raw: string) => void;
+  onCommandError?: (error: CommandErrorMessage) => void;
   onClose?: () => void;
   onError?: () => void;
 };
@@ -38,6 +42,10 @@ export function attachSyncClient(
     const message = parseServerMessage(event.data);
     if (message?.kind === "tick") {
       handlers.onTick?.(event.data);
+      return;
+    }
+    if (message?.kind === "command_error") {
+      handlers.onCommandError?.(message);
     }
   };
 
@@ -52,14 +60,22 @@ export function attachSyncClient(
   return () => socket.close();
 }
 
+export type SyncConnection = {
+  close: () => void;
+  socket: SyncSocket;
+};
+
 export function openSyncClient(
   apiBaseUrl: string,
   idToken: string,
   handlers: SyncClientHandlers,
   createWebSocket: CreateWebSocket,
-): () => void {
+): SyncConnection {
   const socket = createWebSocket(buildSyncWebSocketUrl(apiBaseUrl, idToken));
-  return attachSyncClient(socket, handlers);
+  return {
+    socket,
+    close: attachSyncClient(socket, handlers),
+  };
 }
 
 export function createBrowserWebSocket(url: string): SyncSocket {
