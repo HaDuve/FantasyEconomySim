@@ -1,6 +1,4 @@
-import { describe, expect, it } from "vitest";
-
-import { firebaseConfigFromEnv } from "./firebase-env.js";
+import { firebaseConfigFromEnv } from "./firebase-env";
 
 describe("firebaseConfigFromEnv", () => {
   it("maps EXPO_PUBLIC_FIREBASE_* from env for Expo / #12", () => {

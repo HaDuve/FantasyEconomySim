@@ -7,5 +7,4 @@ source "$(dirname "$0")/dev-common.sh"
 
 dev_prepare
 
-echo "Starting dev server (repo-root .env, port ${PORT:-3000})..."
-exec env -u DATABASE_URL pnpm dev:server
+exec pnpm dev:server

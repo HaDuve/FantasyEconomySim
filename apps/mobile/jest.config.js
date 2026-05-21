@@ -1,0 +1,14 @@
+/** @type {import('jest').Config} */
+module.exports = {
+  preset: "jest-expo",
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  testMatch: [
+    "<rootDir>/src/**/*.test.ts",
+    "<rootDir>/src/**/*.test.tsx",
+    "<rootDir>/app.config.test.js",
+  ],
+  moduleNameMapper: {
+    "^@fantasy-economy-sim/domain$":
+      "<rootDir>/../../packages/domain/dist/index.js",
+  },
+};

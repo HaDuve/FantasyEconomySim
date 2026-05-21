@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { RESOURCE_IDS, STARTER_TRIO_PROFESSION_IDS } from "@fantasy-economy-sim/domain";
 
 describe("mobile domain link", () => {
