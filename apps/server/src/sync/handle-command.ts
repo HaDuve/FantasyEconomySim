@@ -45,7 +45,7 @@ function isOrderSide(value: unknown): value is "buy" | "sell" {
   return value === "buy" || value === "sell";
 }
 
-function isUnknownResourceId(value: unknown): value is ResourceId {
+function isKnownResourceId(value: unknown): value is ResourceId {
   return typeof value === "string" && isResourceId(value);
 }
 
@@ -156,7 +156,7 @@ export function parseClientCommand(body: unknown): ParseClientCommandResult {
   switch (kind) {
     case "place_order": {
       if (
-        !isUnknownResourceId(body.resourceId) ||
+        !isKnownResourceId(body.resourceId) ||
         !isOrderSide(body.side) ||
         !isPositiveInteger(body.price) ||
         !isPositiveInteger(body.quantity)
@@ -187,7 +187,7 @@ export function parseClientCommand(body: unknown): ParseClientCommandResult {
     }
     case "pool_buy": {
       if (
-        !isUnknownResourceId(body.resourceId) ||
+        !isKnownResourceId(body.resourceId) ||
         !isPositiveInteger(body.quantity)
       ) {
         return parseFailure("pool_buy");

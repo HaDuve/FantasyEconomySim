@@ -57,6 +57,28 @@ function waitForMessage<T extends ServerMessage["kind"]>(
   });
 }
 
+function attemptSyncUpgrade(
+  port: number,
+  token?: string,
+): Promise<{ statusCode: number }> {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(wsUrl(port, token));
+
+    ws.once("unexpected-response", (_request, response) => {
+      resolve({ statusCode: response.statusCode });
+    });
+
+    ws.once("open", () => {
+      ws.close();
+      reject(new Error("Expected WebSocket upgrade to be rejected"));
+    });
+
+    ws.once("error", (error) => {
+      reject(error);
+    });
+  });
+}
+
 function connectSync(port: number, token?: string): Promise<WebSocket> {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(wsUrl(port, token));
@@ -120,20 +142,24 @@ describe("sync gateway", () => {
     await container?.stop();
   }, 30_000);
 
-  it("rejects unauthenticated WebSocket connections", async () => {
-    await expect(connectSync(port)).rejects.toThrow();
+  it("rejects unauthenticated WebSocket connections with HTTP 401 on upgrade", async () => {
+    await expect(attemptSyncUpgrade(port)).resolves.toEqual({ statusCode: 401 });
   });
 
   it("rejects invalid tokens with HTTP 401 on upgrade", async () => {
-    await expect(connectSync(port, "not-a-dev-token")).rejects.toThrow();
+    await expect(attemptSyncUpgrade(port, "not-a-dev-token")).resolves.toEqual({
+      statusCode: 401,
+    });
   });
 
-  it("rejects WebSocket connect before HTTP connect grants the starter package", async () => {
+  it("rejects WebSocket connect before HTTP connect grants the starter package with HTTP 401", async () => {
     const db = createDb(pool);
     const uid = "ws-no-starter";
     await registerPlayer(db, { firebaseUid: uid });
 
-    await expect(connectSync(port, `dev:${uid}`)).rejects.toThrow();
+    await expect(attemptSyncUpgrade(port, `dev:${uid}`)).resolves.toEqual({
+      statusCode: 401,
+    });
   });
 
   it("broadcasts tick snapshots to authenticated clients after a global tick", async () => {
