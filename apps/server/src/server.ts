@@ -1,4 +1,5 @@
 import { createServer as createHttpServer } from "node:http";
+import type { Server as HttpServer } from "node:http";
 import type { Pool } from "pg";
 
 import { RESOURCE_IDS } from "@fantasy-economy-sim/domain";
@@ -7,21 +8,36 @@ import type { IdTokenVerifier } from "./auth/id-token-verifier.js";
 import { handleAuthRoute } from "./auth-routes.js";
 import { createDb } from "./db/client.js";
 import { handleDevRoute } from "./dev-routes.js";
+import { createSyncGateway, type SyncGateway } from "./sync/sync-gateway.js";
 
 export type CreateServerOptions = {
   pool?: Pool;
   enableDevRoutes?: boolean;
   idTokenVerifier?: IdTokenVerifier;
+  enableSyncGateway?: boolean;
 };
 
-export function createServer(options: CreateServerOptions = {}) {
+export type AppServer = {
+  httpServer: HttpServer;
+  syncGateway?: SyncGateway;
+};
+
+export function createServer(options: CreateServerOptions = {}): AppServer {
   const db = options.pool ? createDb(options.pool) : undefined;
   const idTokenVerifier = options.idTokenVerifier;
   const devRoutesEnabled =
     options.enableDevRoutes ??
     process.env.NODE_ENV !== "production";
+  const syncEnabled =
+    options.enableSyncGateway ??
+    Boolean(db && idTokenVerifier);
 
-  return createHttpServer(async (request, response) => {
+  const syncGateway =
+    syncEnabled && db && idTokenVerifier
+      ? createSyncGateway({ db, idTokenVerifier })
+      : undefined;
+
+  const httpServer = createHttpServer(async (request, response) => {
     if (request.method === "GET" && request.url === "/health") {
       response.writeHead(200, { "content-type": "application/json" });
       response.end(
@@ -60,4 +76,8 @@ export function createServer(options: CreateServerOptions = {}) {
     response.writeHead(404, { "content-type": "application/json" });
     response.end(JSON.stringify({ error: "not_found" }));
   });
+
+  syncGateway?.attach(httpServer);
+
+  return { httpServer, syncGateway };
 }

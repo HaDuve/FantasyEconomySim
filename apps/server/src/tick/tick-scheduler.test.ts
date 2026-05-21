@@ -33,4 +33,20 @@ describe("startGlobalTickScheduler", () => {
 
     expect(runTick.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
+
+  it("calls onTickComplete after a successful tick", async () => {
+    const result = { tickId: 7, fillsApplied: 0, fillsSkipped: 0 };
+    const runTick = vi.fn().mockResolvedValue(result);
+    const onTickComplete = vi.fn();
+
+    const scheduler = startGlobalTickScheduler({
+      pool: {} as never,
+      intervalMs: 60_000,
+      tickEngine: { runTick },
+      onTickComplete,
+    });
+
+    await vi.waitFor(() => expect(onTickComplete).toHaveBeenCalledWith(result));
+    scheduler.stop();
+  });
 });

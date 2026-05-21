@@ -85,6 +85,18 @@ curl -s -X POST http://localhost:3000/auth/connect \
 
 Expect `starterPackageGranted: true`, 100 crowns, one hunter worker. Reconnect with the same token: same `playerId`, `starterPackageGranted: true` (player flag), no second starter grant (crowns may drop if a global tick charged upkeep).
 
+## WebSocket sync (`/sync`)
+
+The game WebSocket requires a **valid ID token** and a player who has completed **HTTP** `POST /auth/connect` (starter package granted). Connecting with a token alone does **not** create a player or grant the starter trio.
+
+```sh
+# After connect (above), same TOKEN:
+# ws://localhost:3000/sync?token=$TOKEN
+# or upgrade with header: Authorization: Bearer $TOKEN
+```
+
+With `FIREBASE_AUTH_DISABLED=true`, use `dev:<uid>` the same way as `/auth/connect`. Malformed command JSON returns `command_error` with `commandKind: "unknown"`; wire payloads are validated per command `kind` before touching the ledger.
+
 ## Dev bypass (no Firebase)
 
 ```sh

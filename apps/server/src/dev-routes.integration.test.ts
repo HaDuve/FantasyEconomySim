@@ -15,7 +15,7 @@ describe("dev routes", () => {
     pool = new Pool({ connectionString: container.getConnectionUri() });
     await runMigrations(pool);
 
-    const server = createServer({ pool, enableDevRoutes: true });
+    const { httpServer: server } = createServer({ pool, enableDevRoutes: true });
     await new Promise<void>((resolve) => server.listen(0, resolve));
     const address = server.address();
     const port =
@@ -88,7 +88,7 @@ describe("dev routes", () => {
     process.env.NODE_ENV = "production";
 
     try {
-      const server = createServer({ pool });
+      const { httpServer: server } = createServer({ pool });
       await new Promise<void>((resolve) => server.listen(0, resolve));
       const address = server.address();
       const port =
@@ -349,7 +349,7 @@ describe("dev routes", () => {
   });
 
   it("is disabled when dev routes are off", async () => {
-    const server = createServer({ pool, enableDevRoutes: false });
+    const { httpServer: server } = createServer({ pool, enableDevRoutes: false });
     await new Promise<void>((resolve) => server.listen(0, resolve));
     const address = server.address();
     const port =

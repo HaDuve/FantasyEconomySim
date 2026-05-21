@@ -22,7 +22,7 @@ describe("auth routes", () => {
     await runMigrations(pool);
 
     verifier = { verify: vi.fn() };
-    const server = createServer({ pool, idTokenVerifier: verifier });
+    const { httpServer: server } = createServer({ pool, idTokenVerifier: verifier });
     await new Promise<void>((resolve) => server.listen(0, resolve));
     const address = server.address();
     const port =
@@ -74,7 +74,7 @@ describe("auth routes", () => {
   });
 
   it("accepts dev:<uid> tokens for local guest connect", async () => {
-    const devServer = createServer({
+    const { httpServer: devServer } = createServer({
       pool,
       idTokenVerifier: createDevIdTokenVerifier(),
     });

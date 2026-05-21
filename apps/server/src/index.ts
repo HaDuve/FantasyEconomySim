@@ -28,7 +28,7 @@ const idTokenVerifier =
     : createFirebaseIdTokenVerifier();
 
 const port = Number(process.env.PORT ?? 3000);
-const server = createServer({ pool, idTokenVerifier });
+const { httpServer, syncGateway } = createServer({ pool, idTokenVerifier });
 
 const globalTickIntervalMs = Number(
   process.env.GLOBAL_TICK_INTERVAL_MS ?? DEFAULT_GLOBAL_TICK_INTERVAL_MS,
@@ -41,19 +41,30 @@ if (!Number.isFinite(globalTickIntervalMs) || globalTickIntervalMs <= 0) {
 const tickScheduler = startGlobalTickScheduler({
   pool,
   intervalMs: globalTickIntervalMs,
+  onTickComplete: async (result) => {
+    try {
+      await syncGateway?.broadcastTick(result.tickId);
+    } catch (error) {
+      console.error("tick broadcast failed after successful global tick", {
+        tickId: result.tickId,
+        error,
+      });
+    }
+  },
   onError: (error) => {
     console.error("global tick failed", error);
   },
 });
 
-server.listen(port, () => {
+httpServer.listen(port, () => {
   console.log(`server listening on http://localhost:${port}`);
   console.log(`global tick every ${globalTickIntervalMs}ms`);
 });
 
 function shutdown(): void {
   tickScheduler.stop();
-  server.close(() => {
+  syncGateway?.close();
+  httpServer.close(() => {
     void pool.end();
   });
 }
