@@ -64,3 +64,14 @@ skills/
 
 # Local issue scratch (if using local-markdown tracker)
 .scratch/
+
+
+# Firebase local client config (copy from firebaseConfig.example.json)
+firebaseConfig.json
+
+# npm lockfile (pnpm monorepo)
+package-lock.json
+
+# React Native Firebase (only if you switch from JS SDK — see docs/firebase-dev-setup.md)
+apps/mobile/google-services.json
+apps/mobile/GoogleService-Info.plist
