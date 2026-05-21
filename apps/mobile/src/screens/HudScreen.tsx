@@ -2,6 +2,7 @@ import { RESOURCE_IDS } from "@fantasy-economy-sim/domain";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { HudState } from "../session/hud-state";
+import { SessionErrorBanner } from "../ui/SessionErrorBanner";
 
 type HudScreenProps = {
   hud: HudState;
@@ -34,9 +35,7 @@ export function HudScreen({ hud, onOpenMarket }: HudScreenProps) {
           <Text style={styles.marketLinkText}>Open market →</Text>
         </Pressable>
       ) : null}
-      {hud.errorMessage ? (
-        <Text style={styles.error}>{hud.errorMessage}</Text>
-      ) : null}
+      <SessionErrorBanner errorMessage={hud.errorMessage} />
     </View>
   );
 }
@@ -52,10 +51,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     marginBottom: 8,
-  },
-  error: {
-    color: "#b00020",
-    marginTop: 12,
   },
   marketLink: {
     marginTop: 16,

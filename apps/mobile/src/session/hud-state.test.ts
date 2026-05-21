@@ -51,4 +51,19 @@ describe("applyTickBroadcast", () => {
     expect(next.books).toEqual(tick.books);
     expect(next.orders).toEqual(tick.orders);
   });
+
+  it("clears stale command errors when a tick broadcast arrives", () => {
+    const state = { ...initialHudState(), errorMessage: "place_order: invalid_price" };
+    const tick: TickBroadcast = {
+      kind: "tick",
+      tickId: 1,
+      walletCrowns: 100,
+      inventory: {},
+      books: [],
+      orders: [],
+      assignments: [],
+    };
+
+    expect(applyTickBroadcast(state, tick).errorMessage).toBeNull();
+  });
 });

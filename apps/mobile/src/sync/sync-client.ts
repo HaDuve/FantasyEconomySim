@@ -1,3 +1,5 @@
+import type { CommandErrorMessage } from "@fantasy-economy-sim/domain";
+
 import { parseServerMessage } from "./parse-server-message";
 
 export type SyncSocket = {
@@ -13,6 +15,7 @@ export type SyncSocket = {
 export type SyncClientHandlers = {
   onOpen?: () => void;
   onTick?: (raw: string) => void;
+  onCommandError?: (error: CommandErrorMessage) => void;
   onClose?: () => void;
   onError?: () => void;
 };
@@ -39,6 +42,10 @@ export function attachSyncClient(
     const message = parseServerMessage(event.data);
     if (message?.kind === "tick") {
       handlers.onTick?.(event.data);
+      return;
+    }
+    if (message?.kind === "command_error") {
+      handlers.onCommandError?.(message);
     }
   };
 

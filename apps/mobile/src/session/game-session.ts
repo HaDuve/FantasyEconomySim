@@ -10,6 +10,7 @@ import {
   postConnectGuest,
   type ConnectGuestResponse,
 } from "../api/connect-guest";
+import { formatCommandError } from "../sync/format-command-error";
 import { sendClientCommand } from "../sync/send-client-command";
 import type { CreateWebSocket, SyncSocket } from "../sync/sync-client";
 import { openSyncClient } from "../sync/sync-client";
@@ -109,6 +110,8 @@ export function createGameSession(deps: GameSessionDeps): {
       {
         onOpen: () => patchHud({ connectionStatus: "connected" }),
         onTick: handleTickRaw,
+        onCommandError: (error) =>
+          patchHud({ errorMessage: formatCommandError(error) }),
         onClose: () => patchHud({ connectionStatus: "disconnected" }),
         onError: () =>
           patchHud({

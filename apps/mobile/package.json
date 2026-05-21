@@ -4,7 +4,6 @@
   "private": true,
   "main": "index.ts",
   "scripts": {
-    "dev:mobile": "pnpm --filter @fantasy-economy-sim/domain build && expo start --dev-client",
     "start": "pnpm --filter @fantasy-economy-sim/domain build && expo start --dev-client",
     "android": "expo start --android --dev-client",
     "ios": "expo start --ios --dev-client",

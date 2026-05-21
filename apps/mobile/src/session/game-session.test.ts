@@ -357,4 +357,90 @@ describe("createGameSession", () => {
       },
     ]);
   });
+
+  it("surfaces command_error from the sync WebSocket on the HUD", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        playerId: "p1",
+        crowns: 100,
+        inventory: {},
+        workers: [{ profession: "hunter" }],
+        starterPackageGranted: true,
+      }),
+    });
+
+    const socket = mockSocket();
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => socket,
+      onChange: () => {},
+    });
+
+    await session.start();
+    socket.trigger("open");
+    socket.trigger(
+      "message",
+      JSON.stringify({
+        kind: "command_error",
+        commandKind: "place_order",
+        code: "insufficient_crowns",
+      }),
+    );
+
+    expect(session.getState().hud.errorMessage).toBe(
+      "place_order: insufficient_crowns",
+    );
+  });
+
+  it("clears command errors when the next tick broadcast arrives", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        playerId: "p1",
+        crowns: 100,
+        inventory: {},
+        workers: [{ profession: "hunter" }],
+        starterPackageGranted: true,
+      }),
+    });
+
+    const socket = mockSocket();
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => socket,
+      onChange: () => {},
+    });
+
+    await session.start();
+    socket.trigger("open");
+    socket.trigger(
+      "message",
+      JSON.stringify({
+        kind: "command_error",
+        commandKind: "cancel_order",
+        code: "order_not_found",
+      }),
+    );
+    expect(session.getState().hud.errorMessage).toBe("cancel_order: order_not_found");
+
+    socket.trigger(
+      "message",
+      JSON.stringify({
+        kind: "tick",
+        tickId: 2,
+        walletCrowns: 100,
+        inventory: {},
+        books: [],
+        orders: [],
+        assignments: [],
+      }),
+    );
+
+    expect(session.getState().hud.errorMessage).toBeNull();
+  });
 });

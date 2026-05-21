@@ -20,4 +20,20 @@ describe("parseServerMessage", () => {
       expect(message.walletCrowns).toBe(95);
     }
   });
+
+  it("parses command_error from the sync WebSocket", () => {
+    const message = parseServerMessage(
+      JSON.stringify({
+        kind: "command_error",
+        commandKind: "cancel_order",
+        code: "order_not_found",
+      }),
+    );
+
+    expect(message).toEqual({
+      kind: "command_error",
+      commandKind: "cancel_order",
+      code: "order_not_found",
+    });
+  });
 });

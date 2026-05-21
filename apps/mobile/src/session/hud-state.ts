@@ -48,6 +48,7 @@ export function applyTickBroadcast(state: HudState, tick: TickBroadcast): HudSta
     inventory: tick.inventory,
     books: tick.books,
     orders: tick.orders,
+    errorMessage: null,
   };
 }
 

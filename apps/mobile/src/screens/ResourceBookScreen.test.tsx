@@ -87,4 +87,62 @@ describe("ResourceBookScreen", () => {
       quantity: 1,
     });
   });
+
+  it("shows session errors while placing or cancelling orders", () => {
+    render(
+      <ResourceBookScreen
+        resourceId="grain"
+        hud={{ ...hud, errorMessage: "place_order: insufficient_crowns" }}
+        onBack={jest.fn()}
+        onPlaceOrder={jest.fn()}
+        onCancelOrder={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText("place_order: insufficient_crowns")).toBeTruthy();
+  });
+
+  it("shows inline feedback for invalid price or quantity", () => {
+    const onPlaceOrder = jest.fn();
+
+    render(
+      <ResourceBookScreen
+        resourceId="grain"
+        hud={hud}
+        onBack={jest.fn()}
+        onPlaceOrder={onPlaceOrder}
+        onCancelOrder={jest.fn()}
+      />,
+    );
+
+    fireEvent.changeText(screen.getByLabelText("Price"), "0");
+    fireEvent.press(screen.getByText("Place buy"));
+
+    expect(screen.getByText(/whole number greater than 0/i)).toBeTruthy();
+    expect(onPlaceOrder).not.toHaveBeenCalled();
+  });
+
+  it("debounces duplicate place-order taps within the cooldown window", () => {
+    const onPlaceOrder = jest.fn();
+    let now = 1_000;
+    jest.spyOn(Date, "now").mockImplementation(() => now);
+
+    render(
+      <ResourceBookScreen
+        resourceId="grain"
+        hud={hud}
+        onBack={jest.fn()}
+        onPlaceOrder={onPlaceOrder}
+        onCancelOrder={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByText("Place buy"));
+    now += 100;
+    fireEvent.press(screen.getByText("Place buy"));
+
+    expect(onPlaceOrder).toHaveBeenCalledTimes(1);
+
+    jest.restoreAllMocks();
+  });
 });

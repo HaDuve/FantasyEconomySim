@@ -1,5 +1,5 @@
 import type { ResourceId } from "@fantasy-economy-sim/domain";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -9,8 +9,11 @@ import {
 } from "react-native";
 
 import { bookForResource } from "../market/book-for-resource";
+import { canPlaceOrderNow } from "../market/place-order-cooldown";
+import { validateOrderForm } from "../market/validate-order-form";
 import type { PlaceOrderInput } from "../session/game-session";
 import type { HudState } from "../session/hud-state";
+import { SessionErrorBanner } from "../ui/SessionErrorBanner";
 
 type ResourceBookScreenProps = {
   resourceId: ResourceId;
@@ -33,20 +36,32 @@ export function ResourceBookScreen({
 }: ResourceBookScreenProps) {
   const [priceText, setPriceText] = useState("1");
   const [quantityText, setQuantityText] = useState("1");
+  const [formError, setFormError] = useState<string | null>(null);
+  const lastPlacedAtMs = useRef<number | null>(null);
   const book = bookForResource(hud.books, resourceId);
   const openOrders = hud.orders.filter((order) => order.resourceId === resourceId);
 
   function submit(side: "buy" | "sell"): void {
-    const price = Number.parseInt(priceText, 10);
-    const quantity = Number.parseInt(quantityText, 10);
-    if (!Number.isInteger(price) || price <= 0) {
-      return;
-    }
-    if (!Number.isInteger(quantity) || quantity <= 0) {
+    const validation = validateOrderForm(priceText, quantityText);
+    if (!validation.ok) {
+      setFormError(validation.message);
       return;
     }
 
-    onPlaceOrder({ resourceId, side, price, quantity });
+    setFormError(null);
+
+    const now = Date.now();
+    if (!canPlaceOrderNow(lastPlacedAtMs.current, now)) {
+      return;
+    }
+
+    lastPlacedAtMs.current = now;
+    onPlaceOrder({
+      resourceId,
+      side,
+      price: validation.price,
+      quantity: validation.quantity,
+    });
   }
 
   return (
@@ -55,6 +70,7 @@ export function ResourceBookScreen({
         <Text style={styles.back}>← All resources</Text>
       </Pressable>
       <Text style={styles.title}>{resourceId} market</Text>
+      <SessionErrorBanner errorMessage={hud.errorMessage} />
       <Text style={styles.note}>
         Orders are GTC until filled or cancelled. Execution happens on the
         next global tick — not mid-tick.
@@ -97,15 +113,22 @@ export function ResourceBookScreen({
         keyboardType="number-pad"
         style={styles.input}
         value={priceText}
-        onChangeText={setPriceText}
+        onChangeText={(text) => {
+          setPriceText(text);
+          setFormError(null);
+        }}
       />
       <TextInput
         accessibilityLabel="Quantity"
         keyboardType="number-pad"
         style={styles.input}
         value={quantityText}
-        onChangeText={setQuantityText}
+        onChangeText={(text) => {
+          setQuantityText(text);
+          setFormError(null);
+        }}
       />
+      {formError ? <Text style={styles.formError}>{formError}</Text> : null}
       <View style={styles.actions}>
         <Pressable accessibilityRole="button" style={styles.button} onPress={() => submit("buy")}>
           <Text>Place buy</Text>
@@ -155,6 +178,9 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 6,
     padding: 10,
+  },
+  formError: {
+    color: "#b00020",
   },
   actions: {
     flexDirection: "row",

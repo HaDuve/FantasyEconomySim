@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { marketResourceIds } from "../market/tradeable-resources";
 import type { HudState } from "../session/hud-state";
+import { SessionErrorBanner } from "../ui/SessionErrorBanner";
 
 type MarketListScreenProps = {
   hud: HudState;
@@ -23,6 +24,7 @@ export function MarketListScreen({
         </Pressable>
       ) : null}
       <Text style={styles.title}>Market</Text>
+      <SessionErrorBanner errorMessage={hud.errorMessage} />
       <Text style={styles.note}>
         Limit orders are GTC. Matching runs on each global tick — not
         mid-tick.
