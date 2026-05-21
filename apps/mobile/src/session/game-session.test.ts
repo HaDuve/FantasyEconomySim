@@ -75,13 +75,12 @@ describe("createGameSession", () => {
       });
 
     const socket = mockSocket();
-    const states: ReturnType<typeof createGameSession>["getState"][] = [];
     const session = createGameSession({
       apiBaseUrl: "http://localhost:3000",
       auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
       fetch: fetchImpl,
       createWebSocket: () => socket,
-      onChange: (state) => states.push(() => state),
+      onChange: () => {},
     });
 
     await session.start();
@@ -115,5 +114,119 @@ describe("createGameSession", () => {
     expect(session.getState().hud.tickId).toBe(7);
     expect(session.getState().hud.walletCrowns).toBe(99);
     expect(session.getState().hud.connectionStatus).toBe("connected");
+  });
+
+  it("skips onboarding for a returning guest with starter package already granted", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        playerId: "p1",
+        crowns: 100,
+        inventory: { grain: 2 },
+        workers: [{ profession: "miner" }],
+        starterPackageGranted: true,
+      }),
+    });
+
+    const socket = mockSocket();
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => socket,
+      onChange: () => {},
+    });
+
+    await session.start();
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl.mock.calls[0][1].body).toBe("{}");
+    expect(session.getState().phase).toBe("hud");
+    expect(session.getState().hud.workers).toEqual(["miner"]);
+    expect(session.getState().professionSent).toBe(false);
+  });
+
+  it("enters error phase when connect fails for reasons other than profession_required", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: "internal_error" }),
+    });
+
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => mockSocket(),
+      onChange: () => {},
+    });
+
+    await session.start();
+
+    expect(session.getState().phase).toBe("error");
+    expect(session.getState().hud.errorMessage).toBe("internal_error");
+  });
+
+  it("does not POST again when profession was already sent", async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: "profession_required" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          playerId: "p1",
+          crowns: 100,
+          inventory: {},
+          workers: [{ profession: "hunter" }],
+          starterPackageGranted: true,
+        }),
+      });
+
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => mockSocket(),
+      onChange: () => {},
+    });
+
+    await session.start();
+    await session.pickProfession("hunter" as StarterTrioProfessionId);
+    await session.pickProfession("hunter" as StarterTrioProfessionId);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("surfaces pickProfession connect failures on onboarding", async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: "profession_required" }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: "unauthorized" }),
+      });
+
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => mockSocket(),
+      onChange: () => {},
+    });
+
+    await session.start();
+    await session.pickProfession("miner" as StarterTrioProfessionId);
+
+    expect(session.getState().phase).toBe("onboarding");
+    expect(session.getState().hud.errorMessage).toBe("unauthorized");
   });
 });

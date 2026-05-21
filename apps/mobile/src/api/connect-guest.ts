@@ -1,6 +1,7 @@
 import type {
   InventorySnapshot,
   StarterTrioProfessionId,
+  WalletCrowns,
 } from "@fantasy-economy-sim/domain";
 
 export type ConnectGuestWorker = {
@@ -9,7 +10,7 @@ export type ConnectGuestWorker = {
 
 export type ConnectGuestResponse = {
   playerId: string;
-  crowns: number;
+  crowns: WalletCrowns;
   inventory: InventorySnapshot;
   workers: ConnectGuestWorker[];
   starterPackageGranted: boolean;

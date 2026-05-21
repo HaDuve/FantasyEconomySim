@@ -42,6 +42,8 @@ export default function App() {
     session.start().catch((error: unknown) => {
       setBootError(error instanceof Error ? error.message : "boot_failed");
     });
+
+    return () => session.stop();
   }, [session]);
 
   if (bootError) {
@@ -63,11 +65,21 @@ export default function App() {
     );
   }
 
+  if (sessionState.phase === "error") {
+    return (
+      <View style={styles.centered}>
+        <Text>Could not connect: {sessionState.hud.errorMessage}</Text>
+        <StatusBar style="auto" />
+      </View>
+    );
+  }
+
   if (sessionState.phase === "onboarding") {
     return (
       <>
         <OnboardingScreen
           busy={busy}
+          errorMessage={sessionState.hud.errorMessage}
           onPick={async (profession) => {
             setBusy(true);
             try {

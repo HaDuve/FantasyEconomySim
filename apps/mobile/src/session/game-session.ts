@@ -19,7 +19,7 @@ export type GuestAuth = {
   signInAnonymously(): Promise<{ idToken: string }>;
 };
 
-export type GameSessionPhase = "booting" | "onboarding" | "hud";
+export type GameSessionPhase = "booting" | "onboarding" | "hud" | "error";
 
 export type GameSessionState = {
   phase: GameSessionPhase;
@@ -45,9 +45,14 @@ export function initialGameSessionState(): GameSessionState {
   };
 }
 
+function connectErrorMessage(error: unknown): string {
+  return error instanceof ConnectGuestError ? error.code : "connect_failed";
+}
+
 export function createGameSession(deps: GameSessionDeps): {
   start(): Promise<void>;
   pickProfession(profession: StarterTrioProfessionId): Promise<void>;
+  stop(): void;
   getState(): GameSessionState;
 } {
   let state = initialGameSessionState();
@@ -151,17 +156,29 @@ export function createGameSession(deps: GameSessionDeps): {
           return;
         }
 
-        patchHud({
-          connectionStatus: "error",
-          errorMessage:
-            error instanceof ConnectGuestError ? error.code : "connect_failed",
+        emit({
+          ...state,
+          phase: "error",
+          hud: {
+            ...state.hud,
+            connectionStatus: "error",
+            errorMessage: connectErrorMessage(error),
+          },
         });
-        emit({ ...state, phase: "onboarding" });
       }
     },
 
     async pickProfession(profession: StarterTrioProfessionId) {
-      await connectWithProfession(profession);
+      try {
+        await connectWithProfession(profession);
+      } catch (error) {
+        patchHud({ errorMessage: connectErrorMessage(error) });
+      }
+    },
+
+    stop() {
+      closeSync?.();
+      closeSync = undefined;
     },
   };
 }

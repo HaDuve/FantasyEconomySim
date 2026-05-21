@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 type OnboardingScreenProps = {
   onPick: (profession: StarterTrioProfessionId) => void;
   busy?: boolean;
+  errorMessage?: string | null;
 };
 
 const LABELS: Record<StarterTrioProfessionId, string> = {
@@ -15,11 +16,18 @@ const LABELS: Record<StarterTrioProfessionId, string> = {
   herbalist: "Herbalist",
 };
 
-export function OnboardingScreen({ onPick, busy }: OnboardingScreenProps) {
+export function OnboardingScreen({
+  onPick,
+  busy,
+  errorMessage,
+}: OnboardingScreenProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Choose your starter worker</Text>
       <Text style={styles.subtitle}>Starter trio — one profession to begin</Text>
+      {errorMessage ? (
+        <Text style={styles.error}>{errorMessage}</Text>
+      ) : null}
       {STARTER_TRIO_PROFESSION_IDS.map((profession) => (
         <Pressable
           key={profession}
@@ -50,6 +58,12 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: "#555",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  error: {
+    fontSize: 14,
+    color: "#b00020",
     textAlign: "center",
     marginBottom: 8,
   },
