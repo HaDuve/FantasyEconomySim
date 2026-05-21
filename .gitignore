@@ -64,3 +64,10 @@ skills/
 
 # Local issue scratch (if using local-markdown tracker)
 .scratch/
+
+
+# Firebase local client config (copy from firebaseConfig.example.json)
+firebaseConfig.json
+
+# npm lockfile (pnpm monorepo)
+package-lock.json

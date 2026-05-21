@@ -75,7 +75,7 @@ curl -s -X POST http://localhost:3000/auth/connect \
   -d '{"profession": "hunter"}'
 ```
 
-Production uses Firebase Admin (`GOOGLE_APPLICATION_CREDENTIALS` or ADC); see `.env.example`.
+Production uses Firebase Admin (`GOOGLE_APPLICATION_CREDENTIALS` or ADC); see `.env.example`. Full dev bootstrap and E2E steps: [docs/firebase-dev-setup.md](./docs/firebase-dev-setup.md).
 
 ### Mobile (`apps/mobile`)
 
