@@ -21,7 +21,7 @@ cp firebaseConfig.example.json firebaseConfig.json
 Fill `.env` (see `.env.example`):
 
 - `GOOGLE_APPLICATION_CREDENTIALS` — absolute path to the Admin SDK JSON key (server `verifyIdToken`).
-- `EXPO_PUBLIC_FIREBASE_*` — Web app config fields (Expo reads these via `apps/mobile/app.config.ts`).
+- `EXPO_PUBLIC_FIREBASE_*` — Web app config fields (Expo reads these via `apps/mobile/app.config.js`).
 - Optional: `FIREBASE_AUTH_DISABLED=true` to use `Bearer dev:<uid>` without Firebase.
 
 `firebaseConfig.json` is gitignored (local token script only). Never commit service account JSON.
@@ -33,7 +33,7 @@ Fill `.env` (see `.env.example`):
 | Item | Location |
 | --- | --- |
 | Env vars | Repo root `.env` — `EXPO_PUBLIC_FIREBASE_*` |
-| Expo config bridge | [`apps/mobile/app.config.ts`](../apps/mobile/app.config.ts) — loads root `.env`, sets `extra.firebase` |
+| Expo config bridge | [`apps/mobile/app.config.js`](../apps/mobile/app.config.js) — loads root `.env`, sets `extra.firebase` |
 | Env → config (tested) | [`apps/mobile/src/config/firebase-env.ts`](../apps/mobile/src/config/firebase-env.ts) |
 | Runtime init (slice #12) | [`apps/mobile/src/config/firebase.ts`](../apps/mobile/src/config/firebase.ts) — anonymous guest + ID token |
 | Game session / HUD (#12) | [`apps/mobile/src/session/game-session.ts`](../apps/mobile/src/session/game-session.ts) — connect, WebSocket sync, tick HUD |
@@ -51,7 +51,7 @@ const firebase = Constants.expoConfig?.extra?.firebase;
 - `apps/mobile/google-services.json`
 - `apps/mobile/GoogleService-Info.plist`
 
-and add the RN Firebase config plugins to `app.config.ts` (see [rnfirebase.io](https://rnfirebase.io/#managed-workflow)).
+and add the RN Firebase config plugins to `app.config.js` (see [rnfirebase.io](https://rnfirebase.io/#managed-workflow)).
 
 ## E2E smoke test (real Firebase token)
 
