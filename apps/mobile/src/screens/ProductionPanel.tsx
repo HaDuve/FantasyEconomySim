@@ -21,6 +21,7 @@ import type { HudState } from "../session/hud-state";
 type ProductionPanelProps = {
   hud: HudState;
   poolBuyBusy?: boolean;
+  buildingPurchaseBusy?: boolean;
   onPoolBuy: (input: PoolBuyInput) => void;
   onPurchasePrivateBuilding: (buildingTypeId: PrivateBuildingTypeId) => void;
   onSetAssignment: (input: SetAssignmentInput) => void;
@@ -44,6 +45,7 @@ function formatAssignmentLabel(hud: HudState): string {
 export function ProductionPanel({
   hud,
   poolBuyBusy = false,
+  buildingPurchaseBusy = false,
   onPoolBuy,
   onPurchasePrivateBuilding,
   onSetAssignment,
@@ -97,7 +99,7 @@ export function ProductionPanel({
           accessibilityRole="button"
           accessibilityLabel={`Buy ${starterBuilding.replace("_", " ")}`}
           style={styles.button}
-          disabled={crowns < starterBuildingCost}
+          disabled={buildingPurchaseBusy || crowns < starterBuildingCost}
           onPress={() => onPurchasePrivateBuilding(starterBuilding)}
         >
           <Text>

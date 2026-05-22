@@ -49,6 +49,24 @@ describe("ProductionPanel", () => {
     expect(screen.getByLabelText("Pool buy grain")).toBeDisabled();
   });
 
+  it("disables starter building purchase while a purchase is in flight", () => {
+    render(
+      <ProductionPanel
+        hud={{
+          ...initialHudState(),
+          walletCrowns: 100,
+          workers: [{ id: "w1", profession: "miner" }],
+        }}
+        buildingPurchaseBusy
+        onPoolBuy={jest.fn()}
+        onPurchasePrivateBuilding={jest.fn()}
+        onSetAssignment={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText("Buy mine")).toBeDisabled();
+  });
+
   it("shows buy mine for a miner with enough crowns", () => {
     const onPurchase = jest.fn();
 

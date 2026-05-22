@@ -3,7 +3,9 @@ import type { StarterTrioProfessionId } from "@fantasy-economy-sim/domain";
 import { SYNC_OPEN, type SyncSocket } from "../sync/sync-client";
 import { createGameSession } from "./game-session";
 
-function mockSocket(): SyncSocket & { trigger: (type: "open" | "message", data?: string) => void } {
+function mockSocket(): SyncSocket & {
+  trigger: (type: "open" | "message" | "close" | "error", data?: string) => void;
+} {
   const handlers: {
     onopen: ((event: unknown) => void) | null;
     onmessage: ((event: { data: string }) => void) | null;
@@ -50,6 +52,12 @@ function mockSocket(): SyncSocket & { trigger: (type: "open" | "message", data?:
       }
       if (type === "message" && data !== undefined) {
         handlers.onmessage?.({ data });
+      }
+      if (type === "close") {
+        handlers.onclose?.({});
+      }
+      if (type === "error") {
+        handlers.onerror?.({});
       }
     },
   };
@@ -538,6 +546,38 @@ describe("createGameSession", () => {
     expect(session.getState().pendingPoolBuys).toEqual([{ resourceId: "game", quantity: 1 }]);
   });
 
+  it("clears private building purchase in flight when sync disconnects before command_ok", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        playerId: "p1",
+        crowns: 100,
+        inventory: {},
+        workers: [{ id: "w1", profession: "miner" }],
+        privateBuildings: [],
+        starterPackageGranted: true,
+      }),
+    });
+
+    const socket = mockSocket();
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => socket,
+      onChange: () => {},
+    });
+
+    await session.start();
+    socket.trigger("open");
+    session.purchasePrivateBuilding("mine");
+    expect(session.getState().privateBuildingPurchaseInFlight).toBe(true);
+
+    socket.trigger("close");
+
+    expect(session.getState().privateBuildingPurchaseInFlight).toBe(false);
+  });
+
   it("refreshes private buildings from connect after purchase_private_building succeeds", async () => {
     const fetchImpl = jest
       .fn()
@@ -591,6 +631,7 @@ describe("createGameSession", () => {
       { id: "b1", buildingTypeId: "mine" },
     ]);
     expect(session.getState().hud.walletCrowns).toBe(20);
+    expect(session.getState().privateBuildingPurchaseInFlight).toBe(false);
   });
 
   it("debits wallet optimistically when purchasing a private building", async () => {
@@ -620,6 +661,145 @@ describe("createGameSession", () => {
     session.purchasePrivateBuilding("mine");
 
     expect(session.getState().hud.walletCrowns).toBe(20);
+  });
+
+  it("clears pending pool buys when the sync socket closes before command_ok", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        playerId: "p1",
+        crowns: 100,
+        inventory: {},
+        workers: [{ id: "w1", profession: "hunter" }],
+        privateBuildings: [],
+        starterPackageGranted: true,
+      }),
+    });
+
+    const socket = mockSocket();
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => socket,
+      onChange: () => {},
+    });
+
+    await session.start();
+    socket.trigger("open");
+    session.poolBuy({ resourceId: "grain", quantity: 1 });
+    expect(session.getState().pendingPoolBuys).toHaveLength(1);
+
+    socket.trigger("close");
+
+    expect(session.getState().pendingPoolBuys).toEqual([]);
+    expect(session.getState().hud.connectionStatus).toBe("disconnected");
+  });
+
+  it("clears pending pool buys when the sync socket errors before command_ok", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        playerId: "p1",
+        crowns: 100,
+        inventory: {},
+        workers: [{ id: "w1", profession: "hunter" }],
+        privateBuildings: [],
+        starterPackageGranted: true,
+      }),
+    });
+
+    const socket = mockSocket();
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => socket,
+      onChange: () => {},
+    });
+
+    await session.start();
+    socket.trigger("open");
+    session.poolBuy({ resourceId: "grain", quantity: 1 });
+    socket.trigger("error");
+
+    expect(session.getState().pendingPoolBuys).toEqual([]);
+    expect(session.getState().hud.connectionStatus).toBe("error");
+  });
+
+  it("surfaces set_assignment command_error on the HUD banner", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        playerId: "p1",
+        crowns: 100,
+        inventory: {},
+        workers: [{ id: "w1", profession: "miner" }],
+        privateBuildings: [],
+        starterPackageGranted: true,
+      }),
+    });
+
+    const socket = mockSocket();
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => socket,
+      onChange: () => {},
+    });
+
+    await session.start();
+    socket.trigger("open");
+    session.setAssignment({
+      workerId: "w1",
+      assignmentId: "mine_ore",
+      buildingId: "missing-building",
+    });
+    socket.trigger(
+      "message",
+      JSON.stringify({
+        kind: "command_error",
+        commandKind: "set_assignment",
+        code: "building_not_found",
+      }),
+    );
+
+    expect(session.getState().hud.errorMessage).toBe(
+      "set_assignment: building_not_found",
+    );
+  });
+
+  it("ignores a second private building purchase while the first is in flight", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        playerId: "p1",
+        crowns: 100,
+        inventory: {},
+        workers: [{ id: "w1", profession: "miner" }],
+        privateBuildings: [],
+        starterPackageGranted: true,
+      }),
+    });
+
+    const socket = mockSocket();
+    const session = createGameSession({
+      apiBaseUrl: "http://localhost:3000",
+      auth: { signInAnonymously: async () => ({ idToken: "guest-token" }) },
+      fetch: fetchImpl,
+      createWebSocket: () => socket,
+      onChange: () => {},
+    });
+
+    await session.start();
+    socket.trigger("open");
+    session.purchasePrivateBuilding("mine");
+    session.purchasePrivateBuilding("mine");
+
+    expect(socket.send).toHaveBeenCalledTimes(1);
+    expect(session.getState().hud.walletCrowns).toBe(20);
+    expect(session.getState().privateBuildingPurchaseInFlight).toBe(true);
   });
 
   it("updates wallet and inventory immediately when pool_buy succeeds", async () => {

@@ -44,6 +44,8 @@ export type GameSessionState = {
   professionSent: boolean;
   /** FIFO queue of pool buys awaiting matching `command_ok` / `command_error`. */
   pendingPoolBuys: PoolBuyInput[];
+  /** True while a `purchase_private_building` awaits server ack + connect refresh. */
+  privateBuildingPurchaseInFlight: boolean;
 };
 
 export type GameSessionDeps = {
@@ -61,6 +63,7 @@ export function initialGameSessionState(): GameSessionState {
     idToken: null,
     professionSent: false,
     pendingPoolBuys: [],
+    privateBuildingPurchaseInFlight: false,
   };
 }
 
@@ -98,6 +101,25 @@ export function createGameSession(deps: GameSessionDeps): {
 
   function patchHud(patch: Partial<HudState>): void {
     emit({ ...state, hud: { ...state.hud, ...patch } });
+  }
+
+  function clearSyncCommandFlight(): void {
+    if (
+      state.pendingPoolBuys.length === 0 &&
+      !state.privateBuildingPurchaseInFlight
+    ) {
+      return;
+    }
+
+    emit({
+      ...state,
+      pendingPoolBuys: [],
+      privateBuildingPurchaseInFlight: false,
+    });
+  }
+
+  function finishPrivateBuildingPurchase(): void {
+    emit({ ...state, privateBuildingPurchaseInFlight: false });
   }
 
   function applyConnect(connect: ConnectGuestResponse): void {
@@ -142,14 +164,16 @@ export function createGameSession(deps: GameSessionDeps): {
           }
 
           if (ok.commandKind === "purchase_private_building") {
-            void refreshFromConnect().catch((error: unknown) => {
-              patchHud({
-                errorMessage:
-                  error instanceof ConnectGuestError
-                    ? error.code
-                    : "connect_failed",
-              });
-            });
+            void refreshFromConnect()
+              .catch((error: unknown) => {
+                patchHud({
+                  errorMessage:
+                    error instanceof ConnectGuestError
+                      ? error.code
+                      : "connect_failed",
+                });
+              })
+              .finally(finishPrivateBuildingPurchase);
           }
         },
         onCommandError: (error) => {
@@ -167,24 +191,31 @@ export function createGameSession(deps: GameSessionDeps): {
           }
 
           if (error.commandKind === "purchase_private_building") {
-            void refreshFromConnect().catch((refreshError: unknown) => {
-              patchHud({
-                errorMessage:
-                  refreshError instanceof ConnectGuestError
-                    ? refreshError.code
-                    : "connect_failed",
-              });
-            });
+            void refreshFromConnect()
+              .catch((refreshError: unknown) => {
+                patchHud({
+                  errorMessage:
+                    refreshError instanceof ConnectGuestError
+                      ? refreshError.code
+                      : "connect_failed",
+                });
+              })
+              .finally(finishPrivateBuildingPurchase);
           }
 
           patchHud({ errorMessage: formatCommandError(error) });
         },
-        onClose: () => patchHud({ connectionStatus: "disconnected" }),
-        onError: () =>
+        onClose: () => {
+          clearSyncCommandFlight();
+          patchHud({ connectionStatus: "disconnected" });
+        },
+        onError: () => {
+          clearSyncCommandFlight();
           patchHud({
             connectionStatus: "error",
             errorMessage: "sync_connection_failed",
-          }),
+          });
+        },
       },
       deps.createWebSocket,
     );
@@ -303,6 +334,11 @@ export function createGameSession(deps: GameSessionDeps): {
     },
 
     purchasePrivateBuilding(buildingTypeId) {
+      if (state.privateBuildingPurchaseInFlight) {
+        return;
+      }
+
+      emit({ ...state, privateBuildingPurchaseInFlight: true });
       patchHud(applyPrivateBuildingPurchasePending(state.hud, buildingTypeId));
       sendCommand({
         kind: "purchase_private_building",

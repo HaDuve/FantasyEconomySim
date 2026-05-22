@@ -42,6 +42,12 @@ export function starterPrivateBuildingCost(
   return buildingTypeId ? getPrivateBuildingCost(buildingTypeId) : undefined;
 }
 
+/**
+ * Starter HUD only exposes set-assignment when prerequisites are met (e.g. mine
+ * owned before mine_ore). Invalid set_assignment without a building is validated
+ * on the server — see sync-gateway integration tests; manual QA uses dev routes
+ * or WebSocket commands, not the Production panel button.
+ */
 export function buildStarterSetAssignment(
   worker: HudWorker,
   privateBuildings: HudPrivateBuilding[],
