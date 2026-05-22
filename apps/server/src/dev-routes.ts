@@ -1,5 +1,5 @@
 import type { ResourceId } from "@fantasy-economy-sim/domain";
-import { isResourceId, isWalletCrowns } from "@fantasy-economy-sim/domain";
+import { isResourceId, isUuid, isWalletCrowns } from "@fantasy-economy-sim/domain";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { Db } from "./db/client.js";
@@ -202,9 +202,9 @@ function isSetAssignmentBody(value: unknown): value is SetAssignmentBody {
   const body = value as SetAssignmentBody;
 
   return (
-    typeof body.workerId === "string" &&
+    isUuid(body.workerId) &&
     isAssignmentId(body.assignmentId) &&
-    (body.buildingId === undefined || typeof body.buildingId === "string")
+    (body.buildingId === undefined || isUuid(body.buildingId))
   );
 }
 

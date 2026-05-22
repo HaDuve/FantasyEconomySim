@@ -2,6 +2,7 @@ import {
   isAssignmentId,
   isPrivateBuildingTypeId,
   isResourceId,
+  isUuid,
   type ClientCommand,
   type CommandErrorMessage,
   type CommandKind,
@@ -204,7 +205,8 @@ export function parseClientCommand(body: unknown): ParseClientCommandResult {
     }
     case "set_assignment": {
       if (
-        !isNonEmptyString(body.workerId) ||
+        typeof body.workerId !== "string" ||
+        !isUuid(body.workerId) ||
         !isNonEmptyString(body.assignmentId) ||
         !isAssignmentId(body.assignmentId)
       ) {
@@ -218,7 +220,7 @@ export function parseClientCommand(body: unknown): ParseClientCommandResult {
       };
 
       if (body.buildingId !== undefined) {
-        if (!isNonEmptyString(body.buildingId)) {
+        if (typeof body.buildingId !== "string" || !isUuid(body.buildingId)) {
           return parseFailure("set_assignment");
         }
 

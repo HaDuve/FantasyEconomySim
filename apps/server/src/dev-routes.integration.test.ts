@@ -348,6 +348,77 @@ describe("dev routes", () => {
     });
   });
 
+  it("rejects empty workerId on POST /dev/players/:id/assignments", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ crowns: 50 }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    const response = await fetch(
+      `${baseUrl}/dev/players/${playerId}/assignments`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ workerId: "", assignmentId: "hunt_game" }),
+      },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_body" });
+  });
+
+  it("rejects non-UUID workerId on POST /dev/players/:id/assignments", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ crowns: 50 }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    const response = await fetch(
+      `${baseUrl}/dev/players/${playerId}/assignments`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          workerId: "not-a-uuid",
+          assignmentId: "hunt_game",
+        }),
+      },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_body" });
+  });
+
+  it("returns worker_not_owned for unknown worker UUID on POST /dev/players/:id/assignments", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ crowns: 50 }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    const response = await fetch(
+      `${baseUrl}/dev/players/${playerId}/assignments`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          workerId: "00000000-0000-4000-8000-000000000099",
+          assignmentId: "hunt_game",
+        }),
+      },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "worker_not_owned",
+    });
+  });
+
   it("is disabled when dev routes are off", async () => {
     const { httpServer: server } = createServer({ pool, enableDevRoutes: false });
     await new Promise<void>((resolve) => server.listen(0, resolve));

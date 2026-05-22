@@ -50,6 +50,20 @@ describe("parseClientCommand", () => {
     });
   });
 
+  it("rejects set_assignment with non-UUID workerId", () => {
+    expect(
+      parseClientCommand({
+        kind: "set_assignment",
+        workerId: "not-a-uuid",
+        assignmentId: "hunt_game",
+      }),
+    ).toEqual({
+      ok: false,
+      commandKind: "set_assignment",
+      code: "invalid_command",
+    });
+  });
+
   it("rejects pool_buy with non-integer quantity", () => {
     expect(
       parseClientCommand({

@@ -1,3 +1,4 @@
+export { isUuid } from "./uuid.js";
 export {
   assertWalletCrowns,
   isWalletCrowns,
