@@ -393,6 +393,31 @@ describe("dev routes", () => {
     await expect(response.json()).resolves.toEqual({ error: "invalid_body" });
   });
 
+  it("rejects malformed buildingId on POST /dev/players/:id/assignments", async () => {
+    const created = await fetch(`${baseUrl}/dev/players`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ crowns: 50 }),
+    });
+    const { playerId } = (await created.json()) as { playerId: string };
+
+    const response = await fetch(
+      `${baseUrl}/dev/players/${playerId}/assignments`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          workerId: "00000000-0000-4000-8000-000000000001",
+          assignmentId: "hunt_game",
+          buildingId: "not-a-uuid",
+        }),
+      },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_body" });
+  });
+
   it("returns worker_not_owned for unknown worker UUID on POST /dev/players/:id/assignments", async () => {
     const created = await fetch(`${baseUrl}/dev/players`, {
       method: "POST",

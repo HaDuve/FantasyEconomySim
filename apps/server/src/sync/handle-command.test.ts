@@ -50,12 +50,41 @@ describe("parseClientCommand", () => {
     });
   });
 
+  it("rejects set_assignment with empty workerId", () => {
+    expect(
+      parseClientCommand({
+        kind: "set_assignment",
+        workerId: "",
+        assignmentId: "hunt_game",
+      }),
+    ).toEqual({
+      ok: false,
+      commandKind: "set_assignment",
+      code: "invalid_command",
+    });
+  });
+
   it("rejects set_assignment with non-UUID workerId", () => {
     expect(
       parseClientCommand({
         kind: "set_assignment",
         workerId: "not-a-uuid",
         assignmentId: "hunt_game",
+      }),
+    ).toEqual({
+      ok: false,
+      commandKind: "set_assignment",
+      code: "invalid_command",
+    });
+  });
+
+  it("rejects set_assignment with malformed buildingId", () => {
+    expect(
+      parseClientCommand({
+        kind: "set_assignment",
+        workerId: "00000000-0000-4000-8000-000000000001",
+        assignmentId: "hunt_game",
+        buildingId: "not-a-uuid",
       }),
     ).toEqual({
       ok: false,
