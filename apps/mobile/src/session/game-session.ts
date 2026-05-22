@@ -1,6 +1,11 @@
 import type {
   CancelOrderCommand,
+  ClientCommand,
   PlaceOrderCommand,
+  PoolBuyCommand,
+  PrivateBuildingTypeId,
+  PurchasePrivateBuildingCommand,
+  SetAssignmentCommand,
   StarterTrioProfessionId,
   TickBroadcast,
 } from "@fantasy-economy-sim/domain";
@@ -15,8 +20,12 @@ import { sendClientCommand } from "../sync/send-client-command";
 import type { CreateWebSocket, SyncSocket } from "../sync/sync-client";
 import { openSyncClient } from "../sync/sync-client";
 import { parseServerMessage } from "../sync/parse-server-message";
+import type { PoolBuyInput } from "../production/pool-buy";
+import type { SetAssignmentInput } from "../production/starter-flow";
 import {
   applyConnectGuest,
+  applyPoolBuyOk,
+  applyPrivateBuildingPurchasePending,
   applyTickBroadcast,
   initialHudState,
   type HudState,
@@ -33,6 +42,10 @@ export type GameSessionState = {
   hud: HudState;
   idToken: string | null;
   professionSent: boolean;
+  /** FIFO queue of pool buys awaiting matching `command_ok` / `command_error`. */
+  pendingPoolBuys: PoolBuyInput[];
+  /** True while a `purchase_private_building` awaits server ack + connect refresh. */
+  privateBuildingPurchaseInFlight: boolean;
 };
 
 export type GameSessionDeps = {
@@ -49,7 +62,16 @@ export function initialGameSessionState(): GameSessionState {
     hud: initialHudState(),
     idToken: null,
     professionSent: false,
+    pendingPoolBuys: [],
+    privateBuildingPurchaseInFlight: false,
   };
+}
+
+function shiftPendingPoolBuy(
+  pending: PoolBuyInput[],
+): { head: PoolBuyInput | undefined; rest: PoolBuyInput[] } {
+  const [head, ...rest] = pending;
+  return { head, rest };
 }
 
 function connectErrorMessage(error: unknown): string {
@@ -57,12 +79,14 @@ function connectErrorMessage(error: unknown): string {
 }
 
 export type PlaceOrderInput = Omit<PlaceOrderCommand, "kind">;
-
 export function createGameSession(deps: GameSessionDeps): {
   start(): Promise<void>;
   pickProfession(profession: StarterTrioProfessionId): Promise<void>;
   placeOrder(input: PlaceOrderInput): void;
   cancelOrder(orderId: string): void;
+  poolBuy(input: PoolBuyInput): void;
+  purchasePrivateBuilding(buildingTypeId: PrivateBuildingTypeId): void;
+  setAssignment(input: SetAssignmentInput): void;
   stop(): void;
   getState(): GameSessionState;
 } {
@@ -77,6 +101,25 @@ export function createGameSession(deps: GameSessionDeps): {
 
   function patchHud(patch: Partial<HudState>): void {
     emit({ ...state, hud: { ...state.hud, ...patch } });
+  }
+
+  function clearSyncCommandFlight(): void {
+    if (
+      state.pendingPoolBuys.length === 0 &&
+      !state.privateBuildingPurchaseInFlight
+    ) {
+      return;
+    }
+
+    emit({
+      ...state,
+      pendingPoolBuys: [],
+      privateBuildingPurchaseInFlight: false,
+    });
+  }
+
+  function finishPrivateBuildingPurchase(): void {
+    emit({ ...state, privateBuildingPurchaseInFlight: false });
   }
 
   function applyConnect(connect: ConnectGuestResponse): void {
@@ -110,14 +153,69 @@ export function createGameSession(deps: GameSessionDeps): {
       {
         onOpen: () => patchHud({ connectionStatus: "connected" }),
         onTick: handleTickRaw,
-        onCommandError: (error) =>
-          patchHud({ errorMessage: formatCommandError(error) }),
-        onClose: () => patchHud({ connectionStatus: "disconnected" }),
-        onError: () =>
+        onCommandOk: (ok) => {
+          if (ok.commandKind === "pool_buy") {
+            const { head, rest } = shiftPendingPoolBuy(state.pendingPoolBuys);
+            if (head) {
+              patchHud(applyPoolBuyOk(state.hud, head));
+              emit({ ...state, pendingPoolBuys: rest });
+            }
+            return;
+          }
+
+          if (ok.commandKind === "purchase_private_building") {
+            void refreshFromConnect()
+              .catch((error: unknown) => {
+                patchHud({
+                  errorMessage:
+                    error instanceof ConnectGuestError
+                      ? error.code
+                      : "connect_failed",
+                });
+              })
+              .finally(finishPrivateBuildingPurchase);
+          }
+        },
+        onCommandError: (error) => {
+          if (error.commandKind === "pool_buy") {
+            const { rest } = shiftPendingPoolBuy(state.pendingPoolBuys);
+            emit({
+              ...state,
+              pendingPoolBuys: rest,
+              hud: {
+                ...state.hud,
+                errorMessage: formatCommandError(error),
+              },
+            });
+            return;
+          }
+
+          if (error.commandKind === "purchase_private_building") {
+            void refreshFromConnect()
+              .catch((refreshError: unknown) => {
+                patchHud({
+                  errorMessage:
+                    refreshError instanceof ConnectGuestError
+                      ? refreshError.code
+                      : "connect_failed",
+                });
+              })
+              .finally(finishPrivateBuildingPurchase);
+          }
+
+          patchHud({ errorMessage: formatCommandError(error) });
+        },
+        onClose: () => {
+          clearSyncCommandFlight();
+          patchHud({ connectionStatus: "disconnected" });
+        },
+        onError: () => {
+          clearSyncCommandFlight();
           patchHud({
             connectionStatus: "error",
             errorMessage: "sync_connection_failed",
-          }),
+          });
+        },
       },
       deps.createWebSocket,
     );
@@ -125,7 +223,21 @@ export function createGameSession(deps: GameSessionDeps): {
     closeSync = connection.close;
   }
 
-  function sendCommand(command: PlaceOrderCommand | CancelOrderCommand): void {
+  async function refreshFromConnect(): Promise<void> {
+    if (!state.idToken) {
+      return;
+    }
+
+    const connect = await postConnectGuest(
+      deps.apiBaseUrl,
+      state.idToken,
+      {},
+      deps.fetch,
+    );
+    patchHud(applyConnectGuest(state.hud, connect));
+  }
+
+  function sendCommand(command: ClientCommand): void {
     if (!syncSocket) {
       patchHud({ errorMessage: "sync_not_connected" });
       return;
@@ -211,6 +323,31 @@ export function createGameSession(deps: GameSessionDeps): {
 
     cancelOrder(orderId) {
       sendCommand({ kind: "cancel_order", orderId });
+    },
+
+    poolBuy(input) {
+      emit({
+        ...state,
+        pendingPoolBuys: [...state.pendingPoolBuys, input],
+      });
+      sendCommand({ kind: "pool_buy", ...input } satisfies PoolBuyCommand);
+    },
+
+    purchasePrivateBuilding(buildingTypeId) {
+      if (state.privateBuildingPurchaseInFlight) {
+        return;
+      }
+
+      emit({ ...state, privateBuildingPurchaseInFlight: true });
+      patchHud(applyPrivateBuildingPurchasePending(state.hud, buildingTypeId));
+      sendCommand({
+        kind: "purchase_private_building",
+        buildingTypeId,
+      } satisfies PurchasePrivateBuildingCommand);
+    },
+
+    setAssignment(input) {
+      sendCommand({ kind: "set_assignment", ...input } satisfies SetAssignmentCommand);
     },
 
     stop() {

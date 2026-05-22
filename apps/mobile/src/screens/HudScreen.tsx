@@ -1,12 +1,21 @@
 import { RESOURCE_IDS } from "@fantasy-economy-sim/domain";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import type { PoolBuyInput } from "../production/pool-buy";
+import type { SetAssignmentInput } from "../production/starter-flow";
+import type { PrivateBuildingTypeId } from "@fantasy-economy-sim/domain";
 import type { HudState } from "../session/hud-state";
 import { SessionErrorBanner } from "../ui/SessionErrorBanner";
+import { ProductionPanel } from "./ProductionPanel";
 
 type HudScreenProps = {
   hud: HudState;
+  poolBuyBusy?: boolean;
+  buildingPurchaseBusy?: boolean;
   onOpenMarket?: () => void;
+  onPoolBuy?: (input: PoolBuyInput) => void;
+  onPurchasePrivateBuilding?: (buildingTypeId: PrivateBuildingTypeId) => void;
+  onSetAssignment?: (input: SetAssignmentInput) => void;
 };
 
 function formatInventory(inventory: HudState["inventory"]): string {
@@ -18,9 +27,19 @@ function formatInventory(inventory: HudState["inventory"]): string {
   return entries.length > 0 ? entries.join(" · ") : "empty";
 }
 
-export function HudScreen({ hud, onOpenMarket }: HudScreenProps) {
+export function HudScreen({
+  hud,
+  poolBuyBusy,
+  buildingPurchaseBusy,
+  onOpenMarket,
+  onPoolBuy,
+  onPurchasePrivateBuilding,
+  onSetAssignment,
+}: HudScreenProps) {
   const workerLabel =
-    hud.workers.length > 0 ? hud.workers.join(", ") : "none";
+    hud.workers.length > 0
+      ? hud.workers.map((worker) => worker.profession).join(", ")
+      : "none";
 
   return (
     <View style={styles.container}>
@@ -30,6 +49,16 @@ export function HudScreen({ hud, onOpenMarket }: HudScreenProps) {
       <Text>Wallet: {hud.walletCrowns ?? "—"} crowns</Text>
       <Text>Inventory: {formatInventory(hud.inventory)}</Text>
       <Text>Worker: {workerLabel}</Text>
+      {onPoolBuy && onPurchasePrivateBuilding && onSetAssignment ? (
+        <ProductionPanel
+          hud={hud}
+          poolBuyBusy={poolBuyBusy}
+          buildingPurchaseBusy={buildingPurchaseBusy}
+          onPoolBuy={onPoolBuy}
+          onPurchasePrivateBuilding={onPurchasePrivateBuilding}
+          onSetAssignment={onSetAssignment}
+        />
+      ) : null}
       {onOpenMarket ? (
         <Pressable accessibilityRole="button" style={styles.marketLink} onPress={onOpenMarket}>
           <Text style={styles.marketLinkText}>Open market →</Text>

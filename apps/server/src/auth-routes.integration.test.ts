@@ -99,7 +99,8 @@ describe("auth routes", () => {
         playerId: expect.any(String),
         crowns: 100,
         inventory: {},
-        workers: [{ profession: "herbalist" }],
+        workers: [{ id: expect.any(String), profession: "herbalist" }],
+        privateBuildings: [],
         starterPackageGranted: true,
       });
     } finally {
@@ -126,7 +127,8 @@ describe("auth routes", () => {
       playerId: expect.any(String),
       crowns: 100,
       inventory: {},
-      workers: [{ profession: "miner" }],
+      workers: [{ id: expect.any(String), profession: "miner" }],
+      privateBuildings: [],
       starterPackageGranted: true,
     });
   });
@@ -160,8 +162,12 @@ describe("auth routes", () => {
     expect(firstBody.playerId).toBe(secondBody.playerId);
     expect(firstBody.crowns).toBe(100);
     expect(secondBody.crowns).toBe(100);
-    expect(firstBody.workers).toEqual([{ profession: "hunter" }]);
-    expect(secondBody.workers).toEqual([{ profession: "hunter" }]);
+    expect(firstBody.workers).toEqual([
+      { id: expect.any(String), profession: "hunter" },
+    ]);
+    expect(secondBody.workers).toEqual([
+      { id: expect.any(String), profession: "hunter" },
+    ]);
     expect(firstBody.starterPackageGranted).toBe(true);
     expect(secondBody.starterPackageGranted).toBe(true);
   });
@@ -198,7 +204,8 @@ describe("auth routes", () => {
       playerId: firstBody.playerId,
       crowns: 100,
       inventory: {},
-      workers: [{ profession: "hunter" }],
+      workers: [{ id: expect.any(String), profession: "hunter" }],
+      privateBuildings: [],
       starterPackageGranted: true,
     });
     expect(verifier.verify).toHaveBeenCalledTimes(2);
@@ -225,6 +232,7 @@ describe("auth routes", () => {
       crowns: 0,
       inventory: {},
       workers: [],
+      privateBuildings: [],
       starterPackageGranted: false,
     });
 
@@ -242,7 +250,8 @@ describe("auth routes", () => {
       playerId: player.id,
       crowns: 100,
       inventory: {},
-      workers: [{ profession: "miner" }],
+      workers: [{ id: expect.any(String), profession: "miner" }],
+      privateBuildings: [],
       starterPackageGranted: true,
     });
   });

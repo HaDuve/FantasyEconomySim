@@ -52,6 +52,28 @@ describe("applyTickBroadcast", () => {
     expect(next.orders).toEqual(tick.orders);
   });
 
+  it("stores active assignments from each tick broadcast", () => {
+    const tick: TickBroadcast = {
+      kind: "tick",
+      tickId: 3,
+      walletCrowns: 80,
+      inventory: { game: 1 },
+      books: [],
+      orders: [],
+      assignments: [
+        {
+          workerId: "w1",
+          assignmentId: "hunt_game",
+        },
+      ],
+    };
+
+    const next = applyTickBroadcast(initialHudState(), tick);
+
+    expect(next.assignments).toEqual(tick.assignments);
+    expect(next.inventory).toEqual({ game: 1 });
+  });
+
   it("clears stale command errors when a tick broadcast arrives", () => {
     const state = { ...initialHudState(), errorMessage: "place_order: invalid_price" };
     const tick: TickBroadcast = {

@@ -13,7 +13,7 @@ describe("HudScreen", () => {
           tickId: 12,
           walletCrowns: 100,
           inventory: { grain: 3 },
-          workers: ["hunter"],
+          workers: [{ id: "w1", profession: "hunter" }],
         }}
       />,
     );
